@@ -9,10 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.4.21",
-    "@tresjs/core": "^4.0.0",
-    "three": "^0.161.0",
-    "framer-motion": "^11.0.0"
+    "vue": "^3.4.21"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { testConnection } from './api/user'
-import ParticleBackground from './components/ParticleBackground.vue'
 
 const backendStatus = ref<'checking' | 'connected' | 'error'>('checking')
 const backendMessage = ref('')
@@ -26,118 +25,123 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen relative overflow-hidden">
-    <!-- 3D 粒子背景 -->
-    <ParticleBackground />
-
+  <div class="min-h-screen relative overflow-hidden text-slate-800">
     <!-- 主内容 -->
     <div class="relative z-10 flex items-center justify-center min-h-screen p-8">
-      <div class="w-full max-w-2xl">
+      <div class="w-full max-w-5xl">
         <!-- 标题 -->
-        <div class="text-center mb-16">
-          <h1 class="text-6xl font-bold text-white mb-4 tracking-tight">
+        <div class="text-center mb-12 fade-up">
+          <p class="text-sm uppercase tracking-[0.3em] text-stone-500 mb-4">
+            warm bento grid
+          </p>
+          <h1 class="text-6xl font-semibold text-slate-900 mb-4 tracking-tight">
             HORIZON
           </h1>
-          <p class="text-xl text-slate-300">地平线 · 视觉优先的个人技术堡垒</p>
+          <p class="text-xl text-stone-600">地平线 · 视觉优先的个人技术堡垒</p>
         </div>
 
-        <!-- 连接状态卡片 -->
-        <div
-          class="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-12 shadow-2xl shadow-purple-500/20 hover:bg-white/10 hover:border-white/20 transition-all duration-700"
-        >
-          <h2 class="text-3xl font-bold text-white mb-8">前后端连接测试</h2>
-
-          <div class="space-y-6">
-            <!-- 前端状态 -->
-            <div class="flex items-center justify-between p-6 bg-white/5 rounded-2xl">
-              <span class="text-lg text-slate-300">前端服务</span>
-              <div class="flex items-center gap-3">
-                <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-white font-semibold">运行中</span>
-              </div>
+        <!-- Bento Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 fade-up fade-up-delay-1">
+          <div class="md:col-span-2 glass-card p-10">
+            <div class="flex items-center justify-between mb-10">
+              <h2 class="text-2xl font-semibold text-slate-900">前后端连接测试</h2>
+              <span class="text-sm text-stone-500">实时检测</span>
             </div>
 
-            <!-- 后端状态 -->
-            <div class="flex items-center justify-between p-6 bg-white/5 rounded-2xl">
-              <span class="text-lg text-slate-300">后端服务</span>
-              <div class="flex items-center gap-3">
-                <!-- 检查中 -->
-                <div
-                  v-if="backendStatus === 'checking'"
-                  class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"
-                ></div>
-                <!-- 已连接 -->
-                <div
-                  v-else-if="backendStatus === 'connected'"
-                  class="w-3 h-3 bg-green-500 rounded-full animate-pulse"
-                ></div>
-                <!-- 错误 -->
-                <div
-                  v-else
-                  class="w-3 h-3 bg-red-500 rounded-full animate-pulse"
-                ></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <!-- 前端状态 -->
+              <div class="p-6 bg-white/70 border border-white/60 rounded-3xl shadow-sm">
+                <div class="text-sm text-stone-500 mb-4">前端服务</div>
+                <div class="flex items-center justify-between">
+                  <span class="text-4xl font-light text-slate-900">OK</span>
+                  <div class="flex items-center gap-2">
+                    <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm text-stone-600">运行中</span>
+                  </div>
+                </div>
+              </div>
 
-                <span
-                  class="font-semibold"
-                  :class="{
-                    'text-yellow-400': backendStatus === 'checking',
-                    'text-green-400': backendStatus === 'connected',
-                    'text-red-400': backendStatus === 'error',
-                  }"
-                >
-                  {{
-                    backendStatus === 'checking'
-                      ? '检测中...'
-                      : backendStatus === 'connected'
-                      ? '已连接'
-                      : '连接失败'
-                  }}
-                </span>
+              <!-- 后端状态 -->
+              <div class="p-6 bg-white/70 border border-white/60 rounded-3xl shadow-sm">
+                <div class="text-sm text-stone-500 mb-4">后端服务</div>
+                <div class="flex items-center justify-between">
+                  <span class="text-4xl font-light text-slate-900">
+                    {{ backendStatus === 'connected' ? 'OK' : backendStatus === 'checking' ? '...' : 'ERR' }}
+                  </span>
+                  <div class="flex items-center gap-2">
+                    <div
+                      v-if="backendStatus === 'checking'"
+                      class="w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse"
+                    ></div>
+                    <div
+                      v-else-if="backendStatus === 'connected'"
+                      class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"
+                    ></div>
+                    <div v-else class="w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse"></div>
+
+                    <span
+                      class="text-sm font-medium"
+                      :class="{
+                        'text-amber-600': backendStatus === 'checking',
+                        'text-emerald-600': backendStatus === 'connected',
+                        'text-rose-600': backendStatus === 'error',
+                      }"
+                    >
+                      {{
+                        backendStatus === 'checking'
+                          ? '检测中...'
+                          : backendStatus === 'connected'
+                          ? '已连接'
+                          : '连接失败'
+                      }}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- 后端响应消息 -->
             <div
               v-if="backendStatus === 'connected'"
-              class="p-6 bg-green-500/10 border border-green-500/20 rounded-2xl"
+              class="mt-6 p-5 bg-emerald-100/60 border border-emerald-200/60 rounded-3xl text-emerald-700 text-sm"
             >
-              <p class="text-green-400 font-mono">{{ backendMessage }}</p>
+              <span class="font-mono">{{ backendMessage }}</span>
             </div>
 
             <!-- 错误消息 -->
             <div
               v-if="backendStatus === 'error'"
-              class="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl"
+              class="mt-6 p-5 bg-rose-100/60 border border-rose-200/60 rounded-3xl text-rose-700 text-sm"
             >
-              <p class="text-red-400 mb-2">❌ {{ errorMessage }}</p>
-              <p class="text-sm text-slate-400">
+              <p class="mb-2">❌ {{ errorMessage }}</p>
+              <p class="text-stone-500">
                 请确保后端服务已启动：
-                <code class="text-purple-400">cd backend && mvn spring-boot:run</code>
+                <code class="text-amber-700">cd backend && mvn spring-boot:run</code>
               </p>
             </div>
+          </div>
 
-            <!-- 重新测试按钮 -->
+          <div class="glass-card p-8 flex flex-col justify-between">
+            <div>
+              <h3 class="text-lg font-semibold text-slate-900 mb-4">API 配置</h3>
+              <div class="space-y-3 text-sm text-stone-600">
+                <div class="flex items-center justify-between">
+                  <span>后端地址</span>
+                  <span class="font-mono text-slate-700">http://localhost:8080/api</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span>测试端点</span>
+                  <span class="font-mono text-slate-700">/user/test</span>
+                </div>
+              </div>
+            </div>
+
             <button
               @click="checkBackend"
-              class="w-full px-8 py-4 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 text-white font-bold text-lg rounded-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-2xl shadow-purple-500/30"
+              class="mt-10 w-full px-6 py-4 rounded-3xl bg-gradient-to-r from-amber-300 via-orange-200 to-stone-200 text-slate-900 font-semibold hover:scale-105 transition-all duration-300 shadow-md hover:shadow-lg"
             >
               重新测试连接
             </button>
-          </div>
-
-          <!-- API 信息 -->
-          <div class="mt-8 pt-8 border-t border-white/10">
-            <h3 class="text-lg font-semibold text-white mb-4">📡 API 配置</h3>
-            <div class="space-y-2 text-sm font-mono">
-              <div class="flex justify-between text-slate-400">
-                <span>后端地址:</span>
-                <span class="text-purple-400">http://localhost:8080/api</span>
-              </div>
-              <div class="flex justify-between text-slate-400">
-                <span>测试端点:</span>
-                <span class="text-cyan-400">/user/test</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>

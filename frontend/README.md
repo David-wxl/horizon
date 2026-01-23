@@ -1,6 +1,6 @@
-# HORIZON Frontend | 前端应用
+# 地平线 | 视界 Frontend | 前端应用
 
-> 本目录是 HORIZON 项目的前端部分，基于 Vue 3 + Vite + TypeScript
+> 本目录是「地平线 | 视界」的前端部分，基于 Vue 3 + Vite + TypeScript
 
 ---
 
@@ -40,9 +40,9 @@ npm run preview
 frontend/
 ├── src/
 │   ├── components/      # Vue 组件
-│   │   └── ParticleBackground.vue  # 3D 粒子背景
+│   │   └── (可选) 视觉组件
 │   ├── composables/     # 组合式函数（待添加）
-│   ├── views/           # 页面视图（待添加）
+│   ├── views/           # 页面视图
 │   ├── App.vue          # 根组件
 │   ├── main.ts          # 入口文件
 │   └── style.css        # 全局样式
@@ -58,20 +58,21 @@ frontend/
 ## 🎨 设计规范
 
 ### 色彩系统
-- **背景渐变**: `linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 50%, #0f172a 100%)`
-- **主色调**: Purple `#a855f7` / Cyan `#06b6d4`
-- **卡片背景**: `rgba(255, 255, 255, 0.05)` + `backdrop-blur-2xl`
+- **背景渐变**: `linear-gradient(135deg, #f5f5f0 0%, #efece1 50%, #f7f1e8 100%)`
+- **主色调**: Warm Yellow / Orange / Soft Grey
+- **卡片背景**: `bg-white/60` ~ `bg-white/80` + `backdrop-blur-2xl`
 
 ### Tailwind 类命名
 - **间距**: 使用 `p-12`, `p-16`, `gap-8` 等大间距
-- **圆角**: `rounded-2xl` 或 `rounded-3xl`
-- **阴影**: `shadow-2xl shadow-purple-500/20`
-- **hover**: `hover:scale-105 hover:-translate-y-2`
+- **圆角**: `rounded-3xl`
+- **阴影**: 柔和扩散阴影（避免强烈霓虹）
+- **hover**: `hover:scale-105` + 阴影加深
 
 ### 组件规范
 - 使用 Vue 3 Composition API (`<script setup>`)
 - TypeScript 类型定义
 - 复杂逻辑提取到 `composables/`
+ - 页面强调 WYSIWYG 与 Bento Grid 排布
 
 ---
 
@@ -81,7 +82,7 @@ frontend/
 - **Vite**: 快速构建工具
 - **TypeScript**: 类型安全
 - **Tailwind CSS**: 原子化 CSS
-- **Tres.js**: Three.js for Vue (3D 粒子效果)
+- **动画**: CSS Transition / Vue Transition（必要时）
 
 ---
 
@@ -96,10 +97,12 @@ frontend/
 
 ## 🎯 待开发功能
 
-- [ ] 用户登录/注册页面
-- [ ] 双轨知识树可视化
-- [ ] AI 简历诊断界面
-- [ ] 3D 粒子交互优化
+- [x] 用户登录/注册页面（Warm Bento Grid）
+- [ ] Bento 布局编辑器（WYSIWYG）
+- [ ] 内容自动构建器（图像/代码/书影音）
+- [ ] 社区广场（The Square）
+- [ ] 多租户与管理后台
+- [ ] 视觉细节优化
 - [ ] 响应式布局
 
 ---

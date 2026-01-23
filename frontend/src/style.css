@@ -17,7 +17,7 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 50%, #0f172a 100%);
+    background: linear-gradient(135deg, #f5f5f0 0%, #efece1 50%, #f7f1e8 100%);
     background-attachment: fixed;
   }
   
@@ -26,48 +26,74 @@
   }
 }
 
-/* Premium Glassmorphism Components */
+/* Warm Bento Glassmorphism Components */
 @layer components {
   .glass-card {
-    @apply bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl;
+    @apply bg-white/70 backdrop-blur-2xl border border-white/50 rounded-3xl shadow-xl;
     transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .glass-card:hover {
-    @apply bg-white/10 border-white/20 -translate-y-2;
-    box-shadow: 0 25px 50px -12px rgba(168, 85, 247, 0.25),
-                0 0 60px rgba(168, 85, 247, 0.15);
+    @apply bg-white/80 border-white/60 -translate-y-2;
+    box-shadow: 0 25px 50px -12px rgba(120, 102, 72, 0.18),
+                0 12px 40px rgba(120, 102, 72, 0.12);
   }
   
   .glass-panel {
-    @apply bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl;
-    box-shadow: 0 0 60px rgba(168, 85, 247, 0.1);
+    @apply bg-white/70 backdrop-blur-2xl border border-white/50 rounded-3xl;
+    box-shadow: 0 0 60px rgba(120, 102, 72, 0.08);
   }
   
   .btn-primary {
-    @apply px-8 py-4 font-bold text-white rounded-2xl;
-    background: linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #06b6d4 100%);
-    box-shadow: 0 10px 30px rgba(168, 85, 247, 0.3);
+    @apply px-8 py-4 font-semibold text-slate-900 rounded-2xl;
+    background: linear-gradient(135deg, #f6d365 0%, #f1b07a 50%, #e9dbc8 100%);
+    box-shadow: 0 10px 30px rgba(120, 102, 72, 0.2);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .btn-primary:hover {
     @apply -translate-y-1 scale-105;
-    box-shadow: 0 20px 40px rgba(168, 85, 247, 0.5);
+    box-shadow: 0 20px 40px rgba(120, 102, 72, 0.3);
   }
   
   .btn-secondary {
-    @apply px-8 py-4 font-semibold text-white rounded-2xl;
-    @apply bg-white/5 backdrop-blur-xl border border-white/20;
+    @apply px-8 py-4 font-semibold text-slate-900 rounded-2xl;
+    @apply bg-white/60 backdrop-blur-xl border border-white/50;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .btn-secondary:hover {
-    @apply bg-white/10 border-white/30 -translate-y-1;
-    box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
+    @apply bg-white/80 border-white/70 -translate-y-1;
+    box-shadow: 0 10px 30px rgba(120, 102, 72, 0.15);
   }
   
   .gradient-text {
-    @apply bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-amber-500 via-orange-400 to-stone-400 bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  .fade-up {
+    animation: fade-up 0.75s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .fade-up-delay-1 {
+    animation-delay: 120ms;
+  }
+  .fade-up-delay-2 {
+    animation-delay: 240ms;
+  }
+  .fade-up-delay-3 {
+    animation-delay: 360ms;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

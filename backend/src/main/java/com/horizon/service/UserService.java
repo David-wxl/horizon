@@ -9,6 +9,7 @@ import com.horizon.mapper.UserMapper;
 import com.horizon.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -23,10 +24,12 @@ import java.util.Map;
 public class UserService extends ServiceImpl<UserMapper, User> {
     
     private final JwtUtil jwtUtil;
+    private final UserProfileService userProfileService;
     
     /**
      * 用户注册
      */
+    @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> register(RegisterDTO registerDTO) {
         // 检查用户名是否已存在
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
@@ -44,6 +47,9 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         user.setStatus(0);
         
         this.save(user);
+        
+        // 自动创建用户配置
+        userProfileService.createDefaultProfile(user.getId());
         
         // 生成Token
         String token = jwtUtil.generateToken(user.getId(), user.getUsername());

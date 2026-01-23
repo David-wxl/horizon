@@ -1,6 +1,6 @@
-# HORIZON Backend | 后端服务
+# 地平线 | 视界 Backend | 后端服务
 
-> 本目录是 HORIZON 项目的后端部分，基于 Spring Boot 3.x
+> 本目录是「地平线 | 视界」的后端部分，基于 Spring Boot 3.x。平台定位为 SaaS 级个人数字策展平台（多租户）。
 
 ---
 
@@ -49,6 +49,8 @@ java -jar target/horizon-backend-1.0.0.jar
 ---
 
 ## 📡 API 文档
+
+> 说明：当前接口以基础用户与知识树模块为主，后续会扩展为 Bento 策展内容与社区广场相关能力。
 
 ### 用户相关
 
@@ -146,7 +148,11 @@ backend/
 
 ### 数据库设计
 - **用户表** (`t_user`): 用户信息、密码 MD5 加密
-- **知识树表** (`t_knowledge_node`): 递归结构、双轨系统
+- **知识树表** (`t_knowledge_node`): 递归结构、双轨系统（当前阶段保留）
+
+### 多租户（Multi-tenant）
+- 租户隔离策略将用于用户、内容与配置层面的逻辑隔离
+- 当前阶段以用户维度隔离为主，后续补充租户域模型
 
 ### MyBatis-Plus
 - 逻辑删除：`deleted` 字段

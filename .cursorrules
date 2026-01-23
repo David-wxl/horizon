@@ -1,107 +1,88 @@
-# Project Context: HORIZON (地平线)
-You are an expert Senior Full-Stack Engineer working on "HORIZON", a visual-first personal technical fortress.
-The project combines a "Dual-Track Knowledge Tree" with AI resume diagnosis, featuring immersive 3D interactions.
+# Project Context: 地平线 | 视界
+You are an expert Senior Full-Stack Engineer working on "HORIZON | 视界", a SaaS-grade personal digital curation platform.
+The platform breaks traditional blog lists with a highly自由的 Bento Grid 布局，用户像拼图一样拼装生活切片，打造个人数字展览馆。
+Core理念：人人都是策展人（Every user is a curator）。
+Platform Nature: Multi-tenant System (多租户 SaaS)。
+Differentiation: 极致暖色便当 UI + 沉浸式所见即所得编辑体验 + 社区化广场（The Square）。
 
 # Tech Stack & Frameworks
 - **Frontend**: Vue 3 (Composition API, `<script setup>`), Vite, TypeScript.
 - **UI Styling**: Tailwind CSS (Atomic priority), Element Plus (Admin panel ONLY).
-- **Visuals/3D**: Tres.js (Three.js wrapper for Vue) for particle flows, Framer Motion for transitions, ECharts 5.0 for topology.
+- **Visuals/3D**: 暂不启用 3D 相关库；如需可再引入 Tres.js/Three.js。图表使用 ECharts 5.0。
 - **Backend**: Spring Boot 3.x, Java 17+.
 - **Database**: MySQL 8.0 (Recursive queries for knowledge tree), MyBatis-Plus.
 - **AI**: Google Gemini API (via Antigravity proxy).
 
-# UI/Design Guidelines (Strict) - Premium Edition
-1. **Color System** (Luxury Dark Theme):
-   - **Background Gradient**: Deep Purple to Dark Blue `linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 50%, #0f172a 100%)`
-   - **Card Background**: `rgba(255, 255, 255, 0.05)` with `backdrop-blur-2xl`
-   - **Border Glow**: Subtle rainbow gradient borders `border-image: linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4))`
-   - **Text**: Primary `#ffffff` (font-weight: 600+), Secondary `#cbd5e1` (slate-300)
-   - **Accent Colors**: 
-     - Primary: Purple `#a855f7` (Tailwind purple-500)
-     - Secondary: Cyan `#06b6d4` (Tailwind cyan-500)
-     - Gradient: `bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500`
+# UI/Design Guidelines (Strict) - Warm Bento Grid
+1. **Visual Style**:
+   - **Background**: Warm oatmeal/sand tones (e.g., `#F5F5F0` or `#EFEEE5`)
+   - **Cards**: Bento-style modular cards, high-transparency glass, heavy rounded corners `rounded-3xl`, soft diffuse shadows
+   - **Typography**: Clean modern sans-serif, high contrast, thin large numbers for data, primary text `#333`
+   - **Accent**: Soft gradients (warm yellow/orange/soft grey), avoid harsh neon
+   - Preferred fonts: 'Inter' / 'Inter Display' (import as needed)
 
-2. **Typography** (Refined):
-   - **Headings**: 'Inter Display', weight 700-900, tracking-tight, large sizes (text-5xl+)
-   - **Body**: 'Inter', weight 400-500, tracking-normal, line-height relaxed
-   - **Code/Mono**: 'JetBrains Mono', weight 500
-   - Import Google Fonts: `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');`
+2. **Glassmorphism**:
+   - Cards: `bg-white/60` ~ `bg-white/80`, `backdrop-blur-2xl`, `border border-white/40`
+   - Shadow: soft and wide (no hard glows)
+   - Rounded corners: `rounded-3xl` (never below 2xl)
 
-3. **Glassmorphism 2.0** (Enhanced):
-   - All cards: `bg-white/5 backdrop-blur-2xl border border-white/10`
-   - Hover state: `hover:bg-white/10 hover:border-white/20 hover:shadow-2xl hover:shadow-purple-500/20`
-   - Glow effect: `box-shadow: 0 0 60px rgba(168, 85, 247, 0.15)`
-   - Rounded corners: `rounded-2xl` or `rounded-3xl` (never below xl)
+3. **Layout Philosophy**:
+   - Use CSS Grid (`grid-cols-*`) to build Bento layouts
+   - Organize content into small, distinct modules (cards)
+   - Ample whitespace (generous padding and gaps) for a breathable interface
 
-4. **Interactive Particles** (Homepage Required):
-   - **Style**: Rainbow colored particles (red → orange → yellow → green → cyan → blue → purple)
+4. **Animation & Micro-interactions**:
+   - Entry: staggered reveal (fade in + slide up)
+   - Hover: subtle `scale-105` and shadow deepening on interactive cards
+   - Click: jelly-like press feedback (tiny scale down + fast rebound)
+   - Feel: fluid, elastic, smooth (prefer `cubic-bezier(0.4, 0, 0.2, 1)`)
+
+5. **Interactive Particles** (Homepage Optional, 当前不启用):
+   - **Style**: Warm, soft gradient particles (yellow → orange → soft beige)
    - **Behavior**: Mouse-reactive, repel/attract on hover
    - **Tech**: Use Tres.js `Points` with `PointsMaterial`, implement mouse tracking
    - **Count**: 500-1000 particles for fluid motion
    - **Speed**: Smooth easing (ease-out-cubic)
 
-5. **Animation Principles** (Cinematic):
-   - **Page Transitions**: Use Framer Motion `variants` with stagger
-   - **Duration**: 0.6s - 0.8s (never instant, never too slow)
-   - **Easing**: `cubic-bezier(0.4, 0, 0.2, 1)` or custom spring
-   - **Hover Effects**: 
-     - Scale: `hover:scale-105`
-     - Lift: `hover:-translate-y-2`
-     - Glow: Add shadow on hover
-   - **Loading States**: Skeleton screens with shimmer effect
-   - **Micro-interactions**: Button ripples, icon morphs, smooth color transitions
-
-6. **Layout Philosophy** (Bold & Spacious):
-   - **Spacing**: Generous padding (p-12, p-16, p-20), large gaps (gap-8, gap-12)
-   - **Max Width**: Container max-w-7xl, centered content
-   - **Grid**: Asymmetric layouts, overlapping elements for depth
-   - **Hierarchy**: Clear visual hierarchy with size contrast (text-6xl vs text-base)
-   - **Whitespace**: Embrace negative space, avoid crowding
-
-7. **Component Design Patterns**:
-   - **Buttons**: 
-     - Primary: Gradient background + glow
-     - Secondary: Glass effect + border glow
-     - Size: Large (px-8 py-4), bold text
-   - **Cards**: 
-     - Floating appearance with shadow
-     - Smooth hover lift animation
-     - Optional: Animated gradient border
-   - **Inputs**: 
-     - Glass background, focused glow
-     - Large size, comfortable padding
-
-8. **Library Restriction**: 
+6. **Library Restriction**:
    - **Element Plus**: ONLY for admin dashboard
    - **Frontend Portal**: Pure Tailwind + custom components for maximum control
    - Never compromise visual quality for convenience
 
 # Core Business Logic Rules
-1. **Knowledge Tree (The Core)**:
- - **Structure**: Dual-Track System. 
- - Left: "Master Blueprint" (ReadOnly, Standard Paths, Global Shared for all users).
- - Right: "Second Brain" (User Editable, Infinite Hierarchy, User-Isolated).
- - **Data**: Use `parent_id` recursive design in MySQL with `user_id` for isolation.
-2. **AI Resume Atelier**:
- - Inputs: User resume (Markdown/Text).
- - Process: Send to Gemini API -> Analyze -> Return Radar Chart scores & suggestions.
- - **Stateless**: No history storage, real-time analysis only.
-3. **Article Center**:
- - Tech articles, tutorials, and learning resources.
- - Support CRUD operations with rich text editor.
-4. **User System**:
+1. **Bento Curation (The Core)**:
+ - **Structure**: Bento Grid 自由布局，模块化卡片拼装生活切片。
+ - **Content Types**: OOTD、EDC 装备、代码片段、书影音等。
+ - **Auto Builder**: 上传图片/输入代码 -> 自动填充对应卡片并高亮。
+2. **WYSIWYG Editor**:
+ - 用户登录后直接进入主页，点击“编辑”切换上帝模式。
+ - 交互强调所见即所得，编辑与展示无缝切换。
+3. **Community Square**:
+ - 公共广场瀑布流/网格墙，展示用户展览馆。
+ - 访客可进入用户主页、点赞与查看卡片详情。
+4. **Multi-tenant System**:
+ - 租户隔离与数据隔离（用户、内容、配置）。
+5. **User System**:
  - User registration/login (JWT authentication).
  - Personal profile management.
- - Data isolation: Each user's "Second Brain" is private.
 
 # Coding Standards
 - **Vue 3**: Always use Composition API. Extract complex logic into `composables/` directory (e.g., `useKnowledgeTree.ts`).
 - **Tailwind**: Use utility classes directly. Avoid creating custom `.css` files unless for complex animations.
 - **Backend**: Follow Controller -> Service -> Mapper architecture. Use DTOs for data transfer.
 - **Comments**: Write concise comments explaining complex business logic (especially for the Tree recursion algorithms).
+- **Animations**: Use GSAP (or Vue Transition) for complex animations; keep motion smooth.
+
+# Frontend Refactor Constraints (Critical)
+1. **Logic Preservation**:
+   - Do NOT change variable names in `<script setup>`.
+   - Do NOT change API endpoints or request methods.
+   - Do NOT remove `v-model` bindings or `@click` handlers (you may move them).
+2. **Styling**:
+   - Use Tailwind CSS for all styling.
 
 # Behavioral Instructions
-- When I ask for UI code, ALWAYS check the "UI/Design Guidelines" first (Dark mode, Glassmorphism).
+- When I ask for UI code, ALWAYS check the "UI/Design Guidelines" first (Warm Bento Grid).
 - If implementing the 3D scene, prioritize performance (use `InstancedMesh` for particles).
 - Be concise. Focus on code.
 
