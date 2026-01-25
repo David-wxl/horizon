@@ -9,7 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.4.21"
+    "vue": "^3.4.21",
+    "vue-router": "^4.2.5",
+    "highlight.js": "^11.9.0",
+    "marked": "^11.1.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",

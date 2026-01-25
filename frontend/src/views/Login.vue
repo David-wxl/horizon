@@ -43,9 +43,9 @@ async function handleLogin() {
     
     successMessage.value = '登录成功！'
     
-    // 跳转到主页（暂时显示成功消息）
+    // 跳转到广场
     setTimeout(() => {
-      globalThis.location.href = '/'
+      globalThis.location.href = '/square'
     }, 1000)
   } catch (error: any) {
     errorMessage.value = error.message || '登录失败'
@@ -84,9 +84,9 @@ async function handleRegister() {
     
     successMessage.value = '注册成功！正在跳转...'
     
-    // 跳转到主页
+    // 跳转到广场
     setTimeout(() => {
-      globalThis.location.href = '/'
+      globalThis.location.href = '/square'
     }, 1000)
   } catch (error: any) {
     errorMessage.value = error.message || '注册失败'
@@ -122,8 +122,8 @@ function handleSubmit() {
         </div>
 
         <!-- Bento Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 fade-up fade-up-delay-1">
-          <div class="lg:col-span-3 glass-card p-10">
+        <div class="max-w-xl mx-auto fade-up fade-up-delay-1">
+          <div class="glass-card p-10">
             <div class="flex items-center justify-between mb-8">
               <h2 class="text-2xl font-semibold text-slate-900">
                 {{ isLogin ? '登录' : '注册' }}
@@ -227,43 +227,6 @@ function handleSubmit() {
               </div>
             </form>
           </div>
-
-          <div class="lg:col-span-2 glass-card p-8 flex flex-col justify-between">
-            <div>
-              <h3 class="text-lg font-semibold text-slate-900 mb-4">快速说明</h3>
-              <p class="text-stone-600 leading-relaxed">
-                登录后可访问你的「第二大脑」，并在学习路径中持续沉淀知识。
-              </p>
-              <div class="mt-6 space-y-3 text-sm text-stone-600">
-                <div class="flex items-center justify-between">
-                  <span>模式</span>
-                  <span class="font-mono text-slate-700">
-                    {{ isLogin ? 'login' : 'register' }}
-                  </span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span>状态</span>
-                  <span class="font-mono text-slate-700">
-                    {{ loading ? 'loading' : 'idle' }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-8 p-4 bg-white/70 border border-white/60 rounded-3xl text-sm text-stone-600">
-              使用 Warm Bento Grid 风格，保持界面轻盈、清晰、可读。
-            </div>
-          </div>
-        </div>
-
-        <!-- 测试连接链接 -->
-        <div class="text-center mt-8">
-          <a
-            href="/test"
-            class="text-stone-500 hover:text-slate-900 transition-colors text-sm"
-          >
-            查看连接测试
-          </a>
         </div>
       </div>
     </div>

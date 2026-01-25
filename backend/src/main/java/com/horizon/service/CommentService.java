@@ -3,12 +3,16 @@ package com.horizon.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.horizon.entity.Comment;
+import com.horizon.entity.User;
 import com.horizon.mapper.CommentMapper;
+import com.horizon.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 评论服务
@@ -18,6 +22,7 @@ import java.util.List;
 public class CommentService extends ServiceImpl<CommentMapper, Comment> {
     
     private final BentoCardService bentoCardService;
+    private final UserService userService;
     
     /**
      * 创建评论
@@ -67,16 +72,32 @@ public class CommentService extends ServiceImpl<CommentMapper, Comment> {
     }
     
     /**
-     * 获取卡片的所有评论（一级评论）
+     * 获取卡片的所有评论（一级评论，包含用户信息）
      */
-    public List<Comment> getCardComments(Long cardId) {
+    public List<CommentVO> getCardComments(Long cardId) {
         LambdaQueryWrapper<Comment> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Comment::getCardId, cardId)
                .eq(Comment::getParentId, 0)
                .eq(Comment::getStatus, 0)
                .orderByDesc(Comment::getCreateTime);
         
-        return this.list(wrapper);
+        List<Comment> comments = this.list(wrapper);
+        
+        // 转换为 CommentVO 并填充用户信息
+        return comments.stream().map(comment -> {
+            CommentVO vo = new CommentVO();
+            BeanUtils.copyProperties(comment, vo);
+            
+            // 获取用户信息
+            User user = userService.getById(comment.getUserId());
+            if (user != null) {
+                vo.setUsername(user.getUsername());
+                vo.setNickname(user.getNickname());
+                vo.setAvatar(user.getAvatar());
+            }
+            
+            return vo;
+        }).collect(Collectors.toList());
     }
     
     /**

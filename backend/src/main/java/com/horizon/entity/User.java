@@ -40,6 +40,26 @@ public class User {
     private String avatar;
     
     /**
+     * 个人简介
+     */
+    private String bio;
+    
+    /**
+     * 性别：male/female/other
+     */
+    private String gender;
+    
+    /**
+     * 生日
+     */
+    private String birthday;
+    
+    /**
+     * 所在地
+     */
+    private String location;
+    
+    /**
      * 用户状态：0-正常，1-禁用
      */
     private Integer status;

@@ -43,11 +43,9 @@ public class BentoCard {
     private String cardType;
     
     /**
-     * 卡片内容（JSON格式）
-     * 根据 cardType 存储不同结构的数据
-     * 使用 JacksonTypeHandler 自动序列化/反序列化为 String
+     * 卡片内容
+     * 存储文本、Markdown、代码、图片URL/Base64等
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
     private String content;
     
     /**

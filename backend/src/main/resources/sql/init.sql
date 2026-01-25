@@ -17,7 +17,11 @@ CREATE TABLE IF NOT EXISTS t_user (
     password VARCHAR(100) NOT NULL COMMENT '密码（MD5加密）',
     email VARCHAR(100) COMMENT '邮箱',
     nickname VARCHAR(50) COMMENT '昵称',
-    avatar VARCHAR(255) COMMENT '头像URL',
+    avatar LONGTEXT COMMENT '头像URL或Base64',
+    bio TEXT COMMENT '个人简介',
+    gender VARCHAR(10) COMMENT '性别：male/female/other',
+    birthday DATE COMMENT '生日',
+    location VARCHAR(100) COMMENT '所在地',
     status INT DEFAULT 0 COMMENT '状态：0-正常，1-禁用',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -70,14 +74,8 @@ CREATE TABLE IF NOT EXISTS t_bento_card (
     description TEXT COMMENT '卡片描述',
     card_type VARCHAR(20) NOT NULL COMMENT '卡片类型：image/code/text/media/link/collection',
     
-    -- 内容存储（JSON格式，根据card_type存储不同结构）
-    content JSON COMMENT '卡片内容（JSON格式）',
-    -- image: {urls: [], captions: [], style: "grid/slider"}
-    -- code: {language: "javascript", code: "...", theme: "dark"}
-    -- text: {markdown: "...", style: "prose/minimal"}
-    -- media: {type: "video/music/book", title: "", cover: "", metadata: {}}
-    -- link: {url: "", title: "", favicon: "", preview: ""}
-    -- collection: {items: [{type, content}]}
+    -- 内容存储（支持文本、Markdown、代码、链接等）
+    content TEXT COMMENT '卡片内容'
     
     -- 布局信息（Grid 坐标系统）
     grid_x INT DEFAULT 0 COMMENT 'Grid X 坐标',

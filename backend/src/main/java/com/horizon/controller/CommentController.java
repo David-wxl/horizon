@@ -3,6 +3,7 @@ package com.horizon.controller;
 import com.horizon.common.Result;
 import com.horizon.entity.Comment;
 import com.horizon.service.CommentService;
+import com.horizon.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,12 +47,12 @@ public class CommentController {
     }
     
     /**
-     * 获取卡片的所有评论（一级评论）
+     * 获取卡片的所有评论（一级评论，包含用户信息）
      */
     @GetMapping("/card/{cardId}")
-    public Result<List<Comment>> getCardComments(@PathVariable Long cardId) {
+    public Result<List<CommentVO>> getCardComments(@PathVariable Long cardId) {
         try {
-            List<Comment> comments = commentService.getCardComments(cardId);
+            List<CommentVO> comments = commentService.getCardComments(cardId);
             return Result.success(comments);
         } catch (Exception e) {
             return Result.error(e.getMessage());

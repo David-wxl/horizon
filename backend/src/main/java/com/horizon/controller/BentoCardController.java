@@ -91,6 +91,19 @@ public class BentoCardController {
     }
     
     /**
+     * 获取用户的公开卡片
+     */
+    @GetMapping("/user/{userId}/public")
+    public Result<List<BentoCard>> getUserPublicCards(@PathVariable Long userId) {
+        try {
+            List<BentoCard> cards = bentoCardService.getUserCards(userId, true);
+            return Result.success(cards);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
      * 根据分类获取卡片
      */
     @GetMapping("/category/{userId}/{category}")
