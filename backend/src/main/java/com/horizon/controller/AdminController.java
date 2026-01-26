@@ -10,6 +10,7 @@ import com.horizon.mapper.UserMapper;
 import com.horizon.service.AdminService;
 import com.horizon.service.BentoCardService;
 import com.horizon.service.CommentService;
+import com.horizon.service.NotificationService;
 import com.horizon.service.UserService;
 import com.horizon.vo.AdminStatsVO;
 import com.horizon.vo.SystemMonitorVO;
@@ -35,6 +36,7 @@ public class AdminController {
     private final CommentService commentService;
     private final UserService userService;
     private final UserMapper userMapper;
+    private final NotificationService notificationService;
     
     /**
      * 获取统计数据
@@ -272,7 +274,9 @@ public class AdminController {
      * 审核卡片（通过/拒绝）
      */
     @PostMapping("/audit/{cardId}")
-    public Result<Boolean> auditCard(@PathVariable Long cardId, @RequestParam Integer status) {
+    public Result<Boolean> auditCard(@PathVariable Long cardId, 
+                                     @RequestParam Integer status,
+                                     @RequestParam(required = false) String reason) {
         try {
             BentoCard card = bentoCardService.getById(cardId);
             if (card == null) {
@@ -282,6 +286,26 @@ public class AdminController {
             // status: 1=通过, 2=拒绝/封禁
             card.setStatus(status);
             boolean updated = bentoCardService.updateById(card);
+            
+            // 创建通知
+            if (updated) {
+                if (status == 1) {
+                    // 审核通过
+                    notificationService.createAuditPassNotification(
+                        card.getUserId(), 
+                        card.getId(), 
+                        card.getTitle()
+                    );
+                } else if (status == 2) {
+                    // 审核拒绝
+                    notificationService.createAuditRejectNotification(
+                        card.getUserId(), 
+                        card.getId(), 
+                        card.getTitle(), 
+                        reason
+                    );
+                }
+            }
             
             return Result.success(updated);
         } catch (Exception e) {

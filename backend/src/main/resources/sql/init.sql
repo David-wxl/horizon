@@ -165,7 +165,35 @@ CREATE TABLE IF NOT EXISTS t_comment (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评论表';
 
 -- ============================================
--- 6. 关注表（可选，初期可不启用）
+-- 6. 通知表
+-- ============================================
+CREATE TABLE IF NOT EXISTS t_notification (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '通知ID',
+    user_id BIGINT NOT NULL COMMENT '接收用户ID',
+    
+    -- 通知内容
+    type VARCHAR(20) NOT NULL COMMENT '通知类型：audit_pass/audit_reject/comment/like/system',
+    title VARCHAR(200) NOT NULL COMMENT '通知标题',
+    content TEXT COMMENT '通知内容',
+    
+    -- 关联信息
+    card_id BIGINT COMMENT '关联卡片ID（可选）',
+    card_title VARCHAR(200) COMMENT '关联卡片标题（冗余存储）',
+    
+    -- 状态
+    is_read INT DEFAULT 0 COMMENT '是否已读：0-未读，1-已读',
+    
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    read_time DATETIME COMMENT '阅读时间',
+    
+    INDEX idx_user_id (user_id),
+    INDEX idx_type (type),
+    INDEX idx_is_read (is_read),
+    INDEX idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知表';
+
+-- ============================================
+-- 7. 关注表（可选，初期可不启用）
 -- ============================================
 CREATE TABLE IF NOT EXISTS t_follow (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '关注ID',

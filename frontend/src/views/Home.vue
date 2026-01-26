@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { getUserCards, createCard, updateCard, deleteCard, type BentoCard } from '../api/card'
 import BentoCardComponent from '../components/BentoCard.vue'
+import NotificationBell from '../components/NotificationBell.vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // 用户信息
 const user = ref<any>(null)
@@ -234,9 +238,30 @@ async function batchDeleteCards() {
   }
 }
 
+// 监听 storage 变化（多标签页同步）
+function handleStorageChange(e: StorageEvent) {
+  if (e.key === 'token' || e.key === 'user') {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      // 如果 token 被清除，跳转到登录页
+      router.push('/login')
+    } else {
+      // 重新加载用户信息和卡片
+      loadUserInfo()
+      loadCards()
+    }
+  }
+}
+
 onMounted(() => {
   loadUserInfo()
   loadCards()
+  // 监听其他标签页的 localStorage 变化
+  window.addEventListener('storage', handleStorageChange)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('storage', handleStorageChange)
 })
 </script>
 
@@ -256,6 +281,9 @@ onMounted(() => {
           <div class="flex items-center gap-4">
             <!-- 非编辑模式按钮 -->
             <template v-if="!isEditMode">
+              <!-- 通知铃铛 -->
+              <NotificationBell />
+              
               <button
                 v-if="user?.role === 'ADMIN'"
                 @click="$router.push('/admin')"

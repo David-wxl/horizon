@@ -86,8 +86,10 @@ export const getWeeklyActivity = () => {
 }
 
 // 审核卡片
-export const auditCard = (cardId: number, status: number) => {
-  return post<boolean>(`/admin/audit/${cardId}`, null, { params: { status } })
+export const auditCard = (cardId: number, status: number, reason?: string) => {
+  const params: any = { status }
+  if (reason) params.reason = reason
+  return post<boolean>(`/admin/audit/${cardId}`, null, { params })
 }
 
 // 切换用户状态

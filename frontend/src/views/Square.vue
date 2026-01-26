@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { getSquareCards, type BentoCard } from '../api/card'
 import BentoCardComponent from '../components/BentoCard.vue'
+import NotificationBell from '../components/NotificationBell.vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -118,9 +119,24 @@ function handleLogout() {
   router.push('/square')
 }
 
+// 监听 storage 变化（多标签页同步）
+function handleStorageChange(e: StorageEvent) {
+  if (e.key === 'token' || e.key === 'user') {
+    // localStorage 变化时重新检查登录状态
+    checkLoginStatus()
+    loadSquareCards()
+  }
+}
+
 onMounted(() => {
   checkLoginStatus()
   loadSquareCards()
+  // 监听其他标签页的 localStorage 变化
+  window.addEventListener('storage', handleStorageChange)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('storage', handleStorageChange)
 })
 </script>
 
@@ -138,6 +154,9 @@ onMounted(() => {
 
           <!-- 操作按钮 -->
           <div class="flex items-center gap-4">
+            <!-- 通知铃铛（仅登录用户可见） -->
+            <NotificationBell v-if="isLoggedIn" />
+            
             <button
               v-if="isAdmin"
               @click="$router.push('/admin')"

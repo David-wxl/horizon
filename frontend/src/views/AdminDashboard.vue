@@ -125,10 +125,22 @@ function handleStatusClick(filter: string) {
 async function handleAuditFromList(task: any, status: number, index: number) {
   try {
     const action = status === 1 ? '通过' : '拒绝'
-    if (!confirm(`确定要${action}这张卡片吗？`)) return
-    await auditCard(task.id, status)
+    let reason = ''
+    
+    // 如果是拒绝，要求输入理由
+    if (status === 2) {
+      reason = prompt('请输入拒绝理由（必填）：') || ''
+      if (!reason.trim()) {
+        alert('拒绝理由不能为空')
+        return
+      }
+    } else {
+      if (!confirm(`确定要${action}这张卡片吗？`)) return
+    }
+    
+    await auditCard(task.id, status, reason)
     auditQueue.value.splice(index, 1)
-    showToast(`✓ 审核${action}成功`)
+    showToast(`✓ 审核${action}成功${status === 2 ? '，已通知用户' : ''}`)
     const stats = await getDashboardStats()
     dashboardStats.value = stats
   } catch (error: any) {
@@ -140,9 +152,21 @@ async function handleAuditFromList(task: any, status: number, index: number) {
 async function handleAudit(item: AuditItem, status: number) {
   try {
     const action = status === 1 ? '通过' : '拒绝'
-    if (!confirm(`确定要${action}这张卡片吗？`)) return
-    await auditCard(item.id, status)
-    showToast(`✓ 审核${action}成功`)
+    let reason = ''
+    
+    // 如果是拒绝，要求输入理由
+    if (status === 2) {
+      reason = prompt('请输入拒绝理由（必填）：') || ''
+      if (!reason.trim()) {
+        alert('拒绝理由不能为空')
+        return
+      }
+    } else {
+      if (!confirm(`确定要${action}这张卡片吗？`)) return
+    }
+    
+    await auditCard(item.id, status, reason)
+    showToast(`✓ 审核${action}成功${status === 2 ? '，已通知用户' : ''}`)
     await loadDashboardData()
     if (showModal.value) showModal.value = false
   } catch (error: any) {
@@ -189,13 +213,43 @@ function handleLogout() {
 }
 function toggleMenu(key: string) { expandedMenus.value[key] = !expandedMenus.value[key] }
 
+// 监听 storage 变化（多标签页同步）
+function handleStorageChange(e: StorageEvent) {
+  if (e.key === 'token' || e.key === 'user') {
+    const token = localStorage.getItem('token')
+    const userStr = localStorage.getItem('user')
+    
+    if (!token) {
+      // Token 被清除，跳转到登录页
+      router.push('/login')
+    } else if (userStr) {
+      const newUser = JSON.parse(userStr)
+      // 检查新用户是否还是管理员
+      if (newUser.role !== 'ADMIN') {
+        // 不再是管理员，跳转到广场
+        alert('您已不再是管理员')
+        router.push('/square')
+      } else {
+        // 重新加载数据
+        loadUserInfo()
+        loadDashboardData()
+      }
+    }
+  }
+}
+
 onMounted(() => {
   loadUserInfo()
   loadDashboardData()
   startCPUAnimation()
+  // 监听其他标签页的 localStorage 变化
+  window.addEventListener('storage', handleStorageChange)
 })
 
-onUnmounted(() => stopCPUAnimation())
+onUnmounted(() => {
+  stopCPUAnimation()
+  window.removeEventListener('storage', handleStorageChange)
+})
 </script>
 
 <template>

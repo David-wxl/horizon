@@ -106,7 +106,7 @@ public class BentoCardService extends ServiceImpl<BentoCardMapper, BentoCard> {
         if (publicOnly != null && publicOnly) {
             wrapper.eq(BentoCard::getIsPublic, 1);
         }
-        wrapper.eq(BentoCard::getStatus, 0); // 只查询正常状态的卡片
+        wrapper.eq(BentoCard::getStatus, 1); // 只查询已通过审核的卡片（status=1）
         wrapper.orderByDesc(BentoCard::getIsPinned)
                .orderByAsc(BentoCard::getSortOrder)
                .orderByDesc(BentoCard::getCreateTime);
@@ -121,7 +121,7 @@ public class BentoCardService extends ServiceImpl<BentoCardMapper, BentoCard> {
         LambdaQueryWrapper<BentoCard> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BentoCard::getUserId, userId)
                .eq(BentoCard::getCategory, category)
-               .eq(BentoCard::getStatus, 0)
+               .eq(BentoCard::getStatus, 1)  // 只显示已通过审核的卡片
                .orderByDesc(BentoCard::getCreateTime);
         
         return this.list(wrapper);
@@ -134,7 +134,7 @@ public class BentoCardService extends ServiceImpl<BentoCardMapper, BentoCard> {
         Page<BentoCard> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<BentoCard> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BentoCard::getIsPublic, 1)
-               .eq(BentoCard::getStatus, 0)
+               .eq(BentoCard::getStatus, 1)  // 只显示已通过审核的卡片（status=1）
                .orderByDesc(BentoCard::getCreateTime);
         
         return this.page(page, wrapper);
