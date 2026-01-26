@@ -22,9 +22,9 @@ public class JwtUtil {
     private Long expiration;
     
     /**
-     * 生成JWT Token
+     * 生成JWT Token（包含角色信息）
      */
-    public String generateToken(Long userId, String username) {
+    public String generateToken(Long userId, String username, String role) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
         
@@ -33,10 +33,18 @@ public class JwtUtil {
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("username", username)
+                .claim("role", role)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(key)
                 .compact();
+    }
+    
+    /**
+     * 生成JWT Token（兼容旧版本）
+     */
+    public String generateToken(Long userId, String username) {
+        return generateToken(userId, username, "USER");
     }
     
     /**
@@ -53,6 +61,14 @@ public class JwtUtil {
     public String getUsernameFromToken(String token) {
         Claims claims = parseToken(token);
         return claims.get("username", String.class);
+    }
+    
+    /**
+     * 从Token中获取角色
+     */
+    public String getRoleFromToken(String token) {
+        Claims claims = parseToken(token);
+        return claims.get("role", String.class);
     }
     
     /**

@@ -5,6 +5,11 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Vue](https://img.shields.io/badge/Vue-3.4-green.svg)](https://vuejs.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.1-green.svg)](https://spring.io/projects/spring-boot)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-blue.svg)](https://www.mysql.com/)
+
+📖 **[完整项目文档](./PROJECT_OVERVIEW.md)** | 详细功能说明、API文档、部署指南
+
+🎨 **[管理员快速上手](./ADMIN_QUICKSTART.md)** | 管理员功能使用指南
 
 ---
 
@@ -43,8 +48,19 @@
 
 - **🔐 智能权限管理**
   - JWT Token 身份认证
+  - 基于角色的访问控制（RBAC）
   - 访客模式支持浏览公开内容
   - 登录后解锁完整功能
+  - 管理员专属后台仪表盘
+
+- **🎯 管理员仪表盘（NEW）**
+  - 精美的Glassmorphism设计风格
+  - 实时审核队列与状态追踪
+  - 可交互的进度指示器
+  - 本周审核数据可视化
+  - 在线时长监控
+  - 用户/卡片/评论统计
+  - 一键审核通过/拒绝
 
 ---
 
@@ -65,6 +81,7 @@
 - **数据库**: MySQL 8.0
 - **ORM**: MyBatis-Plus 3.5.7
 - **认证**: JWT (jjwt 0.12.3)
+- **权限**: 基于角色的访问控制（RBAC）
 
 ---
 
@@ -89,7 +106,8 @@ horizon/
 │   │   │   ├── Home.vue        # 个人主页
 │   │   │   ├── CardDetail.vue  # 卡片详情
 │   │   │   ├── Profile.vue     # 个人资料
-│   │   │   └── UserHome.vue    # 用户主页
+│   │   │   ├── UserHome.vue    # 用户主页
+│   │   │   └── AdminDashboard.vue  # 管理员仪表盘
 │   │   ├── api/                # API 接口
 │   │   ├── router/             # 路由配置
 │   │   ├── App.vue             # 根组件
@@ -124,6 +142,19 @@ horizon/
 
 ---
 
+## 📚 核心文档
+
+| 文档 | 说明 |
+|------|------|
+| [README.md](./README.md) | 项目总览（本文档） |
+| [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md) | 完整项目文档 |
+| [FEATURES.md](./FEATURES.md) | 功能详细说明 |
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | 部署指南 |
+| [ADMIN_QUICKSTART.md](./ADMIN_QUICKSTART.md) | 管理员快速上手 |
+| [DOCS_INDEX.md](./DOCS_INDEX.md) | 文档索引 |
+
+---
+
 ## 🚀 快速开始
 
 ### 环境要求
@@ -154,8 +185,8 @@ SOURCE backend/src/main/resources/sql/init.sql;
 -- 1. 添加用户资料字段
 SOURCE backend/ADD_USER_PROFILE_FIELDS.sql;
 
--- 2. 修复头像字段长度
-SOURCE backend/FIX_AVATAR_LENGTH.sql;
+-- 2. 添加管理员角色字段
+SOURCE backend/ADD_ADMIN_ROLE.sql;
 ```
 
 ### 3. 配置后端
@@ -235,6 +266,14 @@ npm run dev
 - `GET /api/user/{userId}` - 获取用户信息
 - `POST /api/user/updateProfile` - 更新个人资料
 
+### 管理员相关
+- `GET /api/admin/stats` - 获取统计数据
+- `GET /api/admin/monitor` - 获取系统监控
+- `GET /api/admin/audit-list` - 获取审核列表
+- `POST /api/admin/user/toggle-status` - 切换用户状态
+- `DELETE /api/admin/card/delete/{id}` - 删除卡片
+- `DELETE /api/admin/comment/delete/{id}` - 删除评论
+
 ### 卡片相关
 - `POST /api/card/create` - 创建卡片
 - `PUT /api/card/update` - 更新卡片
@@ -300,35 +339,37 @@ npm run dev
 
 ---
 
-## 🎯 开发路线图
+## 🎯 项目状态
 
-### ✅ 已完成
-- [x] 后端基础架构搭建（Spring Boot + MyBatis-Plus）
-- [x] 用户注册登录系统（JWT认证）
-- [x] 前端登录页面（Warm Bento Grid风格）
-- [x] Bento卡片系统（6种卡片类型）
-- [x] 个人主页与编辑模式
-- [x] 社区广场（瀑布流展示）
-- [x] 搜索功能（模糊查询）
-- [x] 排序功能（最新/最热）
-- [x] 访客模式（无需登录浏览）
-- [x] 点赞评论系统
-- [x] 个人资料页（完整信息编辑）
-- [x] 用户主页（查看他人作品）
-- [x] 批量删除功能
-- [x] 代码高亮（highlight.js）
-- [x] Markdown渲染（marked）
+### ✅ 已完成（完成度：98%）⭐
 
-### 🚧 进行中
-- [ ] 响应式适配优化
-- [ ] 性能优化与缓存
-- [ ] 图片压缩与CDN
+**核心功能**：
+- ✅ 用户系统（注册、登录、个人资料、角色权限）
+- ✅ 卡片系统（6种类型、完整CRUD）
+- ✅ 统一编辑模式（编辑+批量操作）
+- ✅ 社区广场（搜索、排序、访客模式）
+- ✅ 社交互动（点赞、评论、查看数）
+- ✅ 用户主页（个人+他人）
+- ✅ 管理员系统（仪表盘、监控、审核）⭐ 新增
+- ✅ Markdown渲染 + 代码高亮
 
-### 📅 计划中
-- [ ] AI内容生成助手（Gemini API）
-- [ ] 数据统计仪表盘
-- [ ] 导出个人作品集
-- [ ] 多语言支持
+**已修复的问题**：
+- ✅ 搜索Base64图片数据问题
+- ✅ 生日字段空字符串报错
+- ✅ 头像上传字段长度限制
+- ✅ 访客模式交互优化
+
+**新增功能**：
+- ✅ 管理员仪表盘（玻璃拟态设计）
+- ✅ 系统监控（CPU、内存、存储）
+- ✅ 数据统计（用户、卡片、评论、点赞）
+- ✅ 内容审核（快捷操作）
+- ✅ 用户管理（禁用/启用）
+
+### 🚀 优化方向
+- 响应式布局优化
+- 性能与缓存优化
+- 图片压缩处理
 
 ---
 
@@ -360,14 +401,28 @@ npm run dev
 3. 编辑昵称、邮箱、性别、生日等信息
 4. 点击"保存"更新资料
 
+### 管理员后台（仅管理员可见）
+1. 使用管理员账户登录
+2. 点击"🔐 管理后台"
+3. 查看系统统计数据和监控信息
+4. 审核最新发布的内容
+5. 管理用户和内容
+
+**首次使用**：需要在数据库中设置管理员角色
+```sql
+UPDATE t_user SET role = 'ADMIN' WHERE id = 1;
+```
+
 ---
 
-## 🐛 问题反馈
+## 📚 文档说明
 
-如果遇到问题，请查看：
-- `BUGS_FIXED.md` - 已修复的问题列表
-- `NEW_FEATURES_GUIDE.md` - 新功能使用指南
-- `QUICK_DEPLOY.md` - 快速部署指南
+- **[PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md)** - 完整项目文档（推荐阅读）
+- **[FEATURES.md](./FEATURES.md)** - 功能清单
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - 快速部署指南
+- **[PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)** - 项目总结
+- **[ADMIN_GUIDE.md](./ADMIN_GUIDE.md)** - 管理员使用指南
+- **[ADMIN_DEPLOYMENT.md](./ADMIN_DEPLOYMENT.md)** - 管理员功能部署
 
 ---
 

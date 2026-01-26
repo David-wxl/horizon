@@ -8,6 +8,7 @@ const router = useRouter()
 
 // 用户登录状态
 const isLoggedIn = ref(false)
+const isAdmin = ref(false)
 
 // 卡片列表
 const cards = ref<BentoCard[]>([])
@@ -18,10 +19,16 @@ const loading = ref(true)
 const searchKeyword = ref('')
 const sortBy = ref<'latest' | 'hot'>('latest')  // latest: 最新, hot: 最热
 
-// 检查登录状态
+// 检查登录状态和角色
 function checkLoginStatus() {
   const token = localStorage.getItem('token')
   isLoggedIn.value = !!token
+  
+  const userStr = localStorage.getItem('user')
+  if (userStr) {
+    const user = JSON.parse(userStr)
+    isAdmin.value = user.role === 'ADMIN'
+  }
 }
 
 // 加载广场卡片（不分页，加载所有）
@@ -45,13 +52,31 @@ function filterAndSortCards() {
   // 搜索过滤
   if (searchKeyword.value.trim()) {
     const keyword = searchKeyword.value.toLowerCase()
-    filtered = filtered.filter(card => 
-      card.title?.toLowerCase().includes(keyword) ||
-      card.description?.toLowerCase().includes(keyword) ||
-      card.content?.toLowerCase().includes(keyword) ||
-      card.tags?.toLowerCase().includes(keyword) ||
-      card.category?.toLowerCase().includes(keyword)
-    )
+    filtered = filtered.filter(card => {
+      // 搜索标题
+      if (card.title?.toLowerCase().includes(keyword)) return true
+      
+      // 搜索描述
+      if (card.description?.toLowerCase().includes(keyword)) return true
+      
+      // 搜索内容（但排除Base64图片数据和其他二进制数据）
+      if (card.content) {
+        const isBase64Data = card.content.startsWith('data:image') || 
+                            card.content.startsWith('data:') ||
+                            card.content.includes('base64')
+        if (!isBase64Data && card.content.toLowerCase().includes(keyword)) {
+          return true
+        }
+      }
+      
+      // 搜索标签
+      if (card.tags?.toLowerCase().includes(keyword)) return true
+      
+      // 搜索分类
+      if (card.category?.toLowerCase().includes(keyword)) return true
+      
+      return false
+    })
   }
   
   // 排序
@@ -113,6 +138,14 @@ onMounted(() => {
 
           <!-- 操作按钮 -->
           <div class="flex items-center gap-4">
+            <button
+              v-if="isAdmin"
+              @click="$router.push('/admin')"
+              class="px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-300 via-pink-200 to-rose-200 text-slate-900 font-semibold shadow-md hover:scale-105 transition-all duration-300"
+            >
+              🔐 管理后台
+            </button>
+            
             <button
               v-if="isLoggedIn"
               @click="goHome"

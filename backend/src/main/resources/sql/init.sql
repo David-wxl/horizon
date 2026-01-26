@@ -23,12 +23,14 @@ CREATE TABLE IF NOT EXISTS t_user (
     birthday DATE COMMENT '生日',
     location VARCHAR(100) COMMENT '所在地',
     status INT DEFAULT 0 COMMENT '状态：0-正常，1-禁用',
+    role VARCHAR(20) DEFAULT 'USER' COMMENT '用户角色：USER-普通用户，ADMIN-管理员',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted INT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
     INDEX idx_username (username),
     INDEX idx_email (email),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_role (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 
 -- ============================================

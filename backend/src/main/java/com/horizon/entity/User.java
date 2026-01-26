@@ -65,6 +65,11 @@ public class User {
     private Integer status;
     
     /**
+     * 用户角色：USER-普通用户，ADMIN-管理员
+     */
+    private String role;
+    
+    /**
      * 创建时间
      */
     @TableField(fill = FieldFill.INSERT)

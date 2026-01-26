@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getCardDetail, type BentoCard } from '../api/card'
-import { addComment, getComments, type Comment } from '../api/comment'
+import { getCardDetail, deleteCard, type BentoCard } from '../api/card'
+import { addComment, getComments, deleteComment, type Comment } from '../api/comment'
 import { addLike, removeLike } from '../api/like'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'
@@ -124,6 +124,83 @@ function goBack() {
   router.back()
 }
 
+// 判断是否可以删除（作者或管理员）
+const canDelete = computed(() => {
+  if (!user.value || !card.value) return false
+  // 作者可以删除
+  if (user.value.id === card.value.userId) return true
+  // 管理员可以删除
+  if (user.value.role === 'ADMIN') return true
+  return false
+})
+
+// 删除卡片
+async function handleDeleteCard() {
+  if (!card.value || !user.value) return
+  
+  // 重新从 localStorage 获取最新用户信息
+  const userStr = localStorage.getItem('user')
+  if (userStr) {
+    user.value = JSON.parse(userStr)
+  }
+  
+  console.log('=== 前端删除卡片调试 ===')
+  console.log('卡片ID:', card.value.id)
+  console.log('卡片作者ID:', card.value.userId)
+  console.log('当前用户:', user.value)
+  console.log('用户ID:', user.value.id)
+  console.log('用户角色:', user.value.role)
+  
+  const isAdmin = user.value.role === 'ADMIN'
+  const message = isAdmin 
+    ? '⚠️ 管理员操作：确定要删除这张卡片吗？此操作不可恢复！' 
+    : '确定要删除这张卡片吗？此操作不可恢复！'
+  
+  if (!confirm(message)) return
+  
+  try {
+    await deleteCard(card.value.id!, user.value.id)
+    alert('✓ 删除成功')
+    // 返回上一页
+    router.back()
+  } catch (error: any) {
+    console.error('删除失败:', error)
+    alert('删除失败: ' + (error?.message || '未知错误'))
+  }
+}
+
+// 判断是否可以删除评论（作者或管理员）
+function canDeleteComment(comment: Comment): boolean {
+  if (!user.value) return false
+  // 作者可以删除
+  if (user.value.id === comment.userId) return true
+  // 管理员可以删除
+  if (user.value.role === 'ADMIN') return true
+  return false
+}
+
+// 删除评论
+async function handleDeleteComment(comment: Comment) {
+  if (!user.value) return
+  
+  const isAdmin = user.value.role === 'ADMIN'
+  const message = isAdmin 
+    ? '⚠️ 管理员操作：确定要删除这条评论吗？' 
+    : '确定要删除这条评论吗？'
+  
+  if (!confirm(message)) return
+  
+  try {
+    await deleteComment(comment.id!, user.value.id)
+    // 重新加载评论列表
+    await loadComments()
+    alert('✓ 删除成功')
+  } catch (error: any) {
+    console.error('删除评论失败:', error)
+    alert('删除失败: ' + (error?.message || '未知错误'))
+  }
+}
+
 // 代码高亮
 const highlightedCode = computed(() => {
   if (!card.value || card.value.cardType !== 'code') return ''
@@ -165,6 +242,12 @@ onMounted(() => {
   const userStr = localStorage.getItem('user')
   if (userStr) {
     user.value = JSON.parse(userStr)
+    console.log('=== 详情页用户信息 ===')
+    console.log('用户信息:', user.value)
+    console.log('用户ID:', user.value.id)
+    console.log('用户角色:', user.value.role)
+  } else {
+    console.log('未登录')
   }
   loadCardDetail()
 })
@@ -185,7 +268,18 @@ onMounted(() => {
           
           <h1 class="text-xl font-semibold text-slate-900 tracking-tight">卡片详情</h1>
           
-          <div class="w-20"></div>
+          <!-- 删除按钮（作者或管理员可见） -->
+          <div>
+            <button
+              v-if="canDelete"
+              @click="handleDeleteCard"
+              class="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold transition-all hover:scale-105"
+              :title="user?.role === 'ADMIN' ? '管理员删除' : '删除卡片'"
+            >
+              <span v-if="user?.role === 'ADMIN'">🔐</span>
+              🗑️ 删除
+            </button>
+          </div>
         </div>
       </div>
     </nav>
@@ -374,6 +468,16 @@ onMounted(() => {
                   </div>
                   <p class="text-stone-700 leading-relaxed">{{ comment.content }}</p>
                 </div>
+
+                <!-- 删除按钮（作者或管理员可见） -->
+                <button
+                  v-if="canDeleteComment(comment)"
+                  @click="handleDeleteComment(comment)"
+                  class="flex-shrink-0 px-3 py-1 rounded-lg text-sm text-rose-600 hover:bg-rose-50 transition-all"
+                  :title="user?.role === 'ADMIN' ? '管理员删除' : '删除评论'"
+                >
+                  {{ user?.role === 'ADMIN' ? '🔐 删除' : '删除' }}
+                </button>
               </div>
             </div>
           </div>

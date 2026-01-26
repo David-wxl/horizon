@@ -51,13 +51,27 @@ public class CommentService extends ServiceImpl<CommentMapper, Comment> {
     }
     
     /**
-     * 删除评论（逻辑删除）
+     * 删除评论（支持作者和管理员删除）
      */
     @Transactional(rollbackFor = Exception.class)
     public boolean deleteComment(Long commentId, Long userId) {
-        // 验证评论所有权
+        // 验证评论是否存在
         Comment comment = this.getById(commentId);
-        if (comment == null || !comment.getUserId().equals(userId)) {
+        if (comment == null) {
+            throw new RuntimeException("评论不存在");
+        }
+        
+        // 查询用户信息
+        User user = userService.getById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        
+        // 检查权限：作者或管理员可以删除
+        boolean isOwner = comment.getUserId().equals(userId);
+        boolean isAdmin = "ADMIN".equals(user.getRole());
+        
+        if (!isOwner && !isAdmin) {
             throw new RuntimeException("无权删除此评论");
         }
         

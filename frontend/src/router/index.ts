@@ -8,6 +8,7 @@ import Square from '../views/Square.vue'
 import CardDetail from '../views/CardDetail.vue'
 import Profile from '../views/Profile.vue'
 import UserHome from '../views/UserHome.vue'
+import AdminDashboard from '../views/AdminDashboard.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -48,6 +49,12 @@ const routes: RouteRecordRaw[] = [
     path: '/login',
     name: 'Login',
     component: Login
+  },
+  {
+    path: '/admin',
+    name: 'AdminDashboard',
+    component: AdminDashboard,
+    meta: { requiresAuth: true, requiresAdmin: true }  // 需要管理员权限
   }
 ]
 
@@ -59,6 +66,23 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
+  const userStr = localStorage.getItem('user')
+  const user = userStr ? JSON.parse(userStr) : null
+  
+  // 检查管理员权限
+  if (to.meta.requiresAdmin) {
+    if (!token) {
+      // 未登录，跳转到登录页
+      next('/login')
+      return
+    }
+    if (!user || user.role !== 'ADMIN') {
+      // 非管理员，跳转到首页
+      alert('您没有访问权限')
+      next('/square')
+      return
+    }
+  }
   
   if (to.meta.requiresAuth && !token) {
     // 需要登录但未登录，跳转到登录页

@@ -71,6 +71,20 @@ public class UserController {
     @PostMapping("/updateProfile")
     public Result<User> updateProfile(@RequestBody User user) {
         try {
+            // 处理空字符串字段：将空字符串转换为 null，避免数据库报错
+            if (user.getBirthday() != null && user.getBirthday().trim().isEmpty()) {
+                user.setBirthday(null);
+            }
+            if (user.getGender() != null && user.getGender().trim().isEmpty()) {
+                user.setGender(null);
+            }
+            if (user.getLocation() != null && user.getLocation().trim().isEmpty()) {
+                user.setLocation(null);
+            }
+            if (user.getBio() != null && user.getBio().trim().isEmpty()) {
+                user.setBio(null);
+            }
+            
             boolean updated = userService.updateById(user);
             if (updated) {
                 User updatedUser = userService.getById(user.getId());

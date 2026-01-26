@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.horizon.entity.BentoCard;
+import com.horizon.entity.User;
 import com.horizon.mapper.BentoCardMapper;
+import com.horizon.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,7 @@ import java.util.List;
 public class BentoCardService extends ServiceImpl<BentoCardMapper, BentoCard> {
     
     private final BentoCardMapper bentoCardMapper;
+    private final UserMapper userMapper;
     
     /**
      * 创建卡片
@@ -58,15 +61,39 @@ public class BentoCardService extends ServiceImpl<BentoCardMapper, BentoCard> {
     }
     
     /**
-     * 删除卡片（逻辑删除）
+     * 删除卡片（支持作者和管理员删除）
      */
     @Transactional(rollbackFor = Exception.class)
     public boolean deleteCard(Long cardId, Long userId) {
-        // 验证卡片所有权
+        // 验证卡片是否存在
         BentoCard card = this.getById(cardId);
-        if (card == null || !card.getUserId().equals(userId)) {
-            throw new RuntimeException("无权删除此卡片");
+        if (card == null) {
+            throw new RuntimeException("卡片不存在");
         }
+        
+        // 查询用户信息
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        
+        // 检查权限：作者或管理员可以删除
+        boolean isOwner = card.getUserId().equals(userId);
+        boolean isAdmin = "ADMIN".equals(user.getRole());
+        
+        // 调试日志
+        System.out.println("=== 删除卡片权限检查 ===");
+        System.out.println("卡片ID: " + cardId);
+        System.out.println("卡片作者ID: " + card.getUserId());
+        System.out.println("操作用户ID: " + userId);
+        System.out.println("用户角色: " + user.getRole());
+        System.out.println("是否作者: " + isOwner);
+        System.out.println("是否管理员: " + isAdmin);
+        
+        if (!isOwner && !isAdmin) {
+            throw new RuntimeException("无权删除此卡片（作者ID=" + card.getUserId() + ", 用户ID=" + userId + ", 角色=" + user.getRole() + "）");
+        }
+        
         return this.removeById(cardId);
     }
     

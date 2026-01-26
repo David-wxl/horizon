@@ -7,7 +7,7 @@ import BentoCardComponent from '../components/BentoCard.vue'
 const user = ref<any>(null)
 const userId = ref<number>(0)
 
-// 编辑模式
+// 统一的编辑模式（包含编辑和批量操作）
 const isEditMode = ref(false)
 
 // 卡片列表
@@ -16,7 +16,6 @@ const loading = ref(true)
 
 // 批量选择
 const selectedCardIds = ref<Set<number>>(new Set())
-const isSelectMode = ref(false)
 
 // 是否显示添加卡片对话框
 const showAddCardDialog = ref(false)
@@ -72,6 +71,10 @@ async function loadCards() {
 // 切换编辑模式
 function toggleEditMode() {
   isEditMode.value = !isEditMode.value
+  if (!isEditMode.value) {
+    // 退出编辑模式时清空选择
+    selectedCardIds.value.clear()
+  }
 }
 
 // 打开添加卡片对话框
@@ -184,14 +187,6 @@ function handleLogout() {
   globalThis.location.href = '/login'
 }
 
-// 切换选择模式
-function toggleSelectMode() {
-  isSelectMode.value = !isSelectMode.value
-  if (!isSelectMode.value) {
-    selectedCardIds.value.clear()
-  }
-}
-
 // 切换卡片选中状态
 function toggleCardSelection(cardId: number) {
   if (selectedCardIds.value.has(cardId)) {
@@ -233,7 +228,6 @@ async function batchDeleteCards() {
     
     alert(`成功删除 ${count} 张卡片！`)
     selectedCardIds.value.clear()
-    isSelectMode.value = false
     await loadCards()
   } catch (error: any) {
     alert('批量删除失败: ' + error.message)
@@ -260,39 +254,61 @@ onMounted(() => {
 
           <!-- 操作按钮 -->
           <div class="flex items-center gap-4">
-            <button
-              @click="$router.push('/square')"
-              class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
-            >
-              🌍 社区广场
-            </button>
+            <!-- 非编辑模式按钮 -->
+            <template v-if="!isEditMode">
+              <button
+                v-if="user?.role === 'ADMIN'"
+                @click="$router.push('/admin')"
+                class="px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-300 via-pink-200 to-rose-200 text-slate-900 font-semibold shadow-md hover:scale-105 transition-all duration-300"
+              >
+                🔐 管理后台
+              </button>
+              
+              <button
+                @click="$router.push('/square')"
+                class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
+              >
+                🌍 社区广场
+              </button>
 
-            <button
-              @click="openAddCardDialog"
-              class="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-300 via-orange-200 to-stone-200 text-slate-900 font-semibold shadow-md hover:scale-105 transition-all duration-300"
-            >
-              + 添加卡片
-            </button>
+              <button
+                @click="openAddCardDialog"
+                class="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-300 via-orange-200 to-stone-200 text-slate-900 font-semibold shadow-md hover:scale-105 transition-all duration-300"
+              >
+                + 添加卡片
+              </button>
 
-            <button
-              @click="toggleEditMode"
-              class="px-6 py-3 rounded-2xl transition-all duration-300"
-              :class="isEditMode 
-                ? 'bg-gradient-to-r from-rose-300 via-pink-200 to-stone-200 text-slate-900 font-semibold shadow-md' 
-                : 'bg-white/80 text-slate-700 border border-white/60 hover:bg-white'"
-            >
-              {{ isEditMode ? '✓ 完成编辑' : '✎ 编辑布局' }}
-            </button>
+              <button
+                @click="toggleEditMode"
+                class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
+              >
+                ✎ 编辑
+              </button>
 
-            <button
-              v-if="!isSelectMode"
-              @click="toggleSelectMode"
-              class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
-            >
-              ☑️ 批量删除
-            </button>
+              <button
+                @click="$router.push('/profile')"
+                class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
+              >
+                👤 个人资料
+              </button>
 
-            <template v-if="isSelectMode">
+              <button
+                @click="handleLogout"
+                class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
+              >
+                登出
+              </button>
+            </template>
+
+            <!-- 编辑模式按钮 -->
+            <template v-else>
+              <button
+                @click="openAddCardDialog"
+                class="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-300 via-orange-200 to-stone-200 text-slate-900 font-semibold shadow-md hover:scale-105 transition-all duration-300"
+              >
+                + 添加
+              </button>
+
               <button
                 @click="toggleSelectAll"
                 class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
@@ -301,39 +317,20 @@ onMounted(() => {
               </button>
 
               <button
+                v-if="selectedCardIds.size > 0"
                 @click="batchDeleteCards"
-                :disabled="selectedCardIds.size === 0"
-                class="px-6 py-3 rounded-2xl transition-all duration-300"
-                :class="selectedCardIds.size > 0 
-                  ? 'bg-gradient-to-r from-rose-300 via-red-200 to-pink-200 text-slate-900 font-semibold shadow-md hover:scale-105' 
-                  : 'bg-stone-200 text-stone-400 cursor-not-allowed'"
+                class="px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-300 via-red-200 to-pink-200 text-slate-900 font-semibold shadow-md hover:scale-105 transition-all duration-300"
               >
-                🗑️ 删除 {{ selectedCardIds.size > 0 ? `(${selectedCardIds.size})` : '' }}
+                🗑️ 删除 ({{ selectedCardIds.size }})
               </button>
 
               <button
-                @click="toggleSelectMode"
-                class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
+                @click="toggleEditMode"
+                class="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-300 via-green-200 to-teal-200 text-slate-900 font-semibold shadow-md hover:scale-105 transition-all duration-300"
               >
-                取消
+                ✓ 完成
               </button>
             </template>
-
-            <button
-              v-if="!isSelectMode"
-              @click="$router.push('/profile')"
-              class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
-            >
-              👤 个人资料
-            </button>
-
-            <button
-              v-if="!isSelectMode"
-              @click="handleLogout"
-              class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
-            >
-              登出
-            </button>
           </div>
         </div>
       </div>
@@ -369,9 +366,9 @@ onMounted(() => {
           :key="card.id"
           class="relative"
         >
-          <!-- 选择模式复选框 -->
+          <!-- 编辑模式复选框 -->
           <div
-            v-if="isSelectMode"
+            v-if="isEditMode"
             class="absolute top-4 left-4 z-10"
             @click.stop="toggleCardSelection(card.id!)"
           >
@@ -395,7 +392,7 @@ onMounted(() => {
 
           <BentoCardComponent
             :card="card"
-            :edit-mode="isEditMode && !isSelectMode"
+            :edit-mode="isEditMode"
             @edit="openEditCardDialog"
             @delete="handleDeleteCard"
           />

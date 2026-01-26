@@ -19,10 +19,13 @@ export async function request<T>(
 ): Promise<T> {
   const { method = 'GET', headers = {}, body } = options
 
+  // 自动添加 JWT Token
+  const token = localStorage.getItem('token')
   const config: RequestInit = {
     method,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': token } : {}),
       ...headers,
     },
   }
@@ -51,6 +54,21 @@ export function get<T>(endpoint: string): Promise<T> {
 /**
  * POST 请求
  */
-export function post<T>(endpoint: string, body: any): Promise<T> {
-  return request<T>(endpoint, { method: 'POST', body })
+export function post<T>(endpoint: string, body?: any, config?: { params?: Record<string, any> }): Promise<T> {
+  let url = endpoint
+  if (config?.params) {
+    const params = new URLSearchParams()
+    Object.entries(config.params).forEach(([key, value]) => {
+      params.append(key, String(value))
+    })
+    url = `${endpoint}?${params.toString()}`
+  }
+  return request<T>(url, { method: 'POST', body })
+}
+
+/**
+ * DELETE 请求
+ */
+export function del<T>(endpoint: string): Promise<T> {
+  return request<T>(endpoint, { method: 'DELETE' })
 }

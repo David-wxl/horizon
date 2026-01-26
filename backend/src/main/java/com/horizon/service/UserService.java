@@ -24,7 +24,7 @@ import java.util.Map;
 public class UserService extends ServiceImpl<UserMapper, User> {
     
     private final JwtUtil jwtUtil;
-    private final UserProfileService userProfileService;
+    private final UserMapper userMapper;
     
     /**
      * 用户注册
@@ -45,14 +45,12 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         user.setEmail(registerDTO.getEmail());
         user.setNickname(registerDTO.getNickname() != null ? registerDTO.getNickname() : registerDTO.getUsername());
         user.setStatus(0);
+        user.setRole("USER"); // 默认角色为普通用户
         
         this.save(user);
         
-        // 自动创建用户配置
-        userProfileService.createDefaultProfile(user.getId());
-        
-        // 生成Token
-        String token = jwtUtil.generateToken(user.getId(), user.getUsername());
+        // 生成Token（包含角色信息）
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
         
         Map<String, Object> result = new HashMap<>();
         result.put("token", token);
@@ -84,8 +82,9 @@ public class UserService extends ServiceImpl<UserMapper, User> {
             throw new RuntimeException("用户已被禁用");
         }
         
-        // 生成Token
-        String token = jwtUtil.generateToken(user.getId(), user.getUsername());
+        // 生成Token（包含角色信息）
+        String role = user.getRole() != null ? user.getRole() : "USER";
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), role);
         
         Map<String, Object> result = new HashMap<>();
         result.put("token", token);
@@ -111,6 +110,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         userInfo.put("nickname", user.getNickname());
         userInfo.put("email", user.getEmail());
         userInfo.put("avatar", user.getAvatar());
+        userInfo.put("role", user.getRole() != null ? user.getRole() : "USER");  // 添加角色信息
         return userInfo;
     }
 }
