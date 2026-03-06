@@ -14,6 +14,7 @@ import org.springframework.util.DigestUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -93,6 +94,47 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         return result;
     }
     
+    /**
+     * 修改密码
+     */
+    public boolean changePassword(Long userId, String oldPassword, String newPassword) {
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        if (!user.getPassword().equals(encryptPassword(oldPassword))) {
+            throw new RuntimeException("原密码错误");
+        }
+        user.setPassword(encryptPassword(newPassword));
+        return this.updateById(user);
+    }
+    
+    /**
+     * 检查用户名是否已存在
+     */
+    public boolean checkUsernameExists(String username) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getUsername, username);
+        return this.count(wrapper) > 0;
+    }
+
+    /**
+     * 搜索用户（按用户名或昵称模糊匹配）
+     */
+    public List<User> searchUsers(String keyword) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.and(w -> w
+                .like(User::getUsername, keyword)
+                .or()
+                .like(User::getNickname, keyword)
+        );
+        wrapper.eq(User::getStatus, 0);
+        wrapper.last("LIMIT 10");
+        List<User> users = this.list(wrapper);
+        users.forEach(u -> u.setPassword(null));
+        return users;
+    }
+
     /**
      * 密码加密（MD5）
      */

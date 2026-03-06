@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { post } from '../api/request'
+import { changePassword } from '../api/user'
 
 const router = useRouter()
 
@@ -21,6 +22,43 @@ const user = ref<any>({
 const loading = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
+
+// 修改密码
+const showPasswordForm = ref(false)
+const passwordForm = ref({ oldPassword: '', newPassword: '', confirmPassword: '' })
+const passwordLoading = ref(false)
+const passwordMessage = ref('')
+const passwordError = ref('')
+
+async function handleChangePassword() {
+  passwordMessage.value = ''
+  passwordError.value = ''
+
+  if (!passwordForm.value.oldPassword || !passwordForm.value.newPassword) {
+    passwordError.value = '请填写完整'
+    return
+  }
+  if (passwordForm.value.newPassword.length < 6) {
+    passwordError.value = '新密码长度不能少于6位'
+    return
+  }
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    passwordError.value = '两次输入的新密码不一致'
+    return
+  }
+
+  passwordLoading.value = true
+  try {
+    await changePassword(user.value.id, passwordForm.value.oldPassword, passwordForm.value.newPassword)
+    passwordMessage.value = '密码修改成功！'
+    passwordForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
+    setTimeout(() => { passwordMessage.value = ''; showPasswordForm.value = false }, 2000)
+  } catch (error: any) {
+    passwordError.value = error.message || '修改失败'
+  } finally {
+    passwordLoading.value = false
+  }
+}
 
 // 头像预览
 const avatarPreview = ref('')
@@ -265,6 +303,70 @@ onMounted(() => {
               {{ loading ? '保存中...' : '保存' }}
             </button>
           </div>
+        </form>
+      </div>
+
+      <!-- 修改密码区域 -->
+      <div class="glass-card p-12 mt-8">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-semibold text-slate-900">账户安全</h2>
+          <button
+            @click="showPasswordForm = !showPasswordForm"
+            class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
+          >
+            {{ showPasswordForm ? '取消' : '修改密码' }}
+          </button>
+        </div>
+
+        <form v-if="showPasswordForm" @submit.prevent="handleChangePassword" class="space-y-6">
+          <div>
+            <label for="old-password" class="block text-stone-600 mb-2">当前密码</label>
+            <input
+              id="old-password"
+              v-model="passwordForm.oldPassword"
+              type="password"
+              required
+              placeholder="请输入当前密码"
+              class="w-full px-6 py-4 bg-white/80 border border-white/60 rounded-3xl text-slate-900 placeholder-stone-400 focus:outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-200/60 transition-all"
+            />
+          </div>
+          <div>
+            <label for="new-password" class="block text-stone-600 mb-2">新密码</label>
+            <input
+              id="new-password"
+              v-model="passwordForm.newPassword"
+              type="password"
+              required
+              placeholder="请输入新密码（至少6位）"
+              class="w-full px-6 py-4 bg-white/80 border border-white/60 rounded-3xl text-slate-900 placeholder-stone-400 focus:outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-200/60 transition-all"
+            />
+          </div>
+          <div>
+            <label for="confirm-password" class="block text-stone-600 mb-2">确认新密码</label>
+            <input
+              id="confirm-password"
+              v-model="passwordForm.confirmPassword"
+              type="password"
+              required
+              placeholder="请再次输入新密码"
+              class="w-full px-6 py-4 bg-white/80 border border-white/60 rounded-3xl text-slate-900 placeholder-stone-400 focus:outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-200/60 transition-all"
+            />
+          </div>
+
+          <div v-if="passwordError" class="p-4 bg-rose-100/70 border border-rose-200/60 rounded-3xl text-rose-700 text-sm">
+            {{ passwordError }}
+          </div>
+          <div v-if="passwordMessage" class="p-4 bg-emerald-100/70 border border-emerald-200/60 rounded-3xl text-emerald-700 text-sm">
+            {{ passwordMessage }}
+          </div>
+
+          <button
+            type="submit"
+            :disabled="passwordLoading"
+            class="w-full px-8 py-4 rounded-3xl bg-gradient-to-r from-slate-800 to-slate-700 text-white font-semibold hover:scale-105 transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50"
+          >
+            {{ passwordLoading ? '修改中...' : '确认修改密码' }}
+          </button>
         </form>
       </div>
     </main>

@@ -81,15 +81,6 @@ public class BentoCardService extends ServiceImpl<BentoCardMapper, BentoCard> {
         boolean isOwner = card.getUserId().equals(userId);
         boolean isAdmin = "ADMIN".equals(user.getRole());
         
-        // 调试日志
-        System.out.println("=== 删除卡片权限检查 ===");
-        System.out.println("卡片ID: " + cardId);
-        System.out.println("卡片作者ID: " + card.getUserId());
-        System.out.println("操作用户ID: " + userId);
-        System.out.println("用户角色: " + user.getRole());
-        System.out.println("是否作者: " + isOwner);
-        System.out.println("是否管理员: " + isAdmin);
-        
         if (!isOwner && !isAdmin) {
             throw new RuntimeException("无权删除此卡片（作者ID=" + card.getUserId() + ", 用户ID=" + userId + ", 角色=" + user.getRole() + "）");
         }
@@ -105,12 +96,11 @@ public class BentoCardService extends ServiceImpl<BentoCardMapper, BentoCard> {
         wrapper.eq(BentoCard::getUserId, userId);
         if (publicOnly != null && publicOnly) {
             wrapper.eq(BentoCard::getIsPublic, 1);
+            wrapper.eq(BentoCard::getStatus, 1);
         }
-        wrapper.eq(BentoCard::getStatus, 1); // 只查询已通过审核的卡片（status=1）
         wrapper.orderByDesc(BentoCard::getIsPinned)
                .orderByAsc(BentoCard::getSortOrder)
                .orderByDesc(BentoCard::getCreateTime);
-        
         return this.list(wrapper);
     }
     
@@ -181,8 +171,7 @@ public class BentoCardService extends ServiceImpl<BentoCardMapper, BentoCard> {
      */
     public Integer countUserCards(Long userId) {
         LambdaQueryWrapper<BentoCard> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(BentoCard::getUserId, userId)
-               .eq(BentoCard::getStatus, 0);
+        wrapper.eq(BentoCard::getUserId, userId);
         return (int) this.count(wrapper);
     }
 }

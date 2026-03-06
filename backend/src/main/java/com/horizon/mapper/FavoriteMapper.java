@@ -1,9 +1,9 @@
 package com.horizon.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.horizon.entity.Like;
+import com.horizon.entity.Favorite;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface LikeMapper extends BaseMapper<Like> {
+public interface FavoriteMapper extends BaseMapper<Favorite> {
 }

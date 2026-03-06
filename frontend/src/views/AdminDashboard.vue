@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import * as echarts from 'echarts'
 import { 
   getDashboardStats, getAuditQueue, getApprovedCards, getWeeklyActivity, auditCard,
-  type DashboardStats, type AuditItem, type WeekActivity
+  getChartData, type DashboardStats, type AuditItem, type WeekActivity, type ChartData
 } from '../api/admin'
 
 const router = useRouter()
@@ -22,11 +23,104 @@ const cpuTimer = ref<any>(null)
 const onlineTime = ref('02:35')
 const onlineProgress = ref(65)
 const expandedMenus = ref<Record<string, boolean>>({ system: false, users: true, statistics: false, logs: false })
-const currentMonth = ref('2024年9月')
-const calendarDays = ref([
-  { day: '周一', date: 22 }, { day: '周二', date: 23 }, { day: '周三', date: 24 },
-  { day: '周四', date: 25 }, { day: '周五', date: 26 }, { day: '周六', date: 27 }
-])
+
+// ECharts 相关
+const chartData = ref<ChartData | null>(null)
+const pieChartRef = ref<HTMLElement | null>(null)
+const lineChartRef = ref<HTMLElement | null>(null)
+const barChartRef = ref<HTMLElement | null>(null)
+const statusChartRef = ref<HTMLElement | null>(null)
+let pieChart: echarts.ECharts | null = null
+let lineChart: echarts.ECharts | null = null
+let barChart: echarts.ECharts | null = null
+let statusChart: echarts.ECharts | null = null
+
+async function loadChartData() {
+  try {
+    chartData.value = await getChartData()
+    await nextTick()
+    renderCharts()
+  } catch {}
+}
+
+function renderCharts() {
+  if (!chartData.value) return
+  
+  // 卡片类型饼图
+  if (pieChartRef.value) {
+    pieChart = echarts.init(pieChartRef.value)
+    pieChart.setOption({
+      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+      color: ['#fbbf24', '#2d2d2d', '#a8a29e', '#fb923c', '#6ee7b7', '#93c5fd'],
+      series: [{
+        type: 'pie', radius: ['40%', '70%'], padAngle: 3,
+        itemStyle: { borderRadius: 6 },
+        label: { show: true, fontSize: 12 },
+        data: chartData.value.typeDistribution
+      }]
+    })
+  }
+
+  // 每日新增折线图
+  if (lineChartRef.value) {
+    lineChart = echarts.init(lineChartRef.value)
+    const dates = chartData.value.dailyCards.map(d => d.date.slice(5))
+    lineChart.setOption({
+      tooltip: { trigger: 'axis' },
+      grid: { left: 40, right: 20, top: 30, bottom: 30 },
+      xAxis: { type: 'category', data: dates, axisLabel: { fontSize: 10, interval: 4 } },
+      yAxis: { type: 'value', minInterval: 1 },
+      series: [
+        { name: '新增卡片', type: 'line', data: chartData.value.dailyCards.map(d => d.count), smooth: true, lineStyle: { color: '#fbbf24', width: 3 }, itemStyle: { color: '#fbbf24' }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(251,191,36,0.3)' }, { offset: 1, color: 'rgba(251,191,36,0.02)' }] } } },
+        { name: '新增用户', type: 'line', data: chartData.value.dailyUsers.map(d => d.count), smooth: true, lineStyle: { color: '#2d2d2d', width: 3 }, itemStyle: { color: '#2d2d2d' }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(45,45,45,0.15)' }, { offset: 1, color: 'rgba(45,45,45,0.01)' }] } } }
+      ]
+    })
+  }
+
+  // 热门卡片柱状图
+  if (barChartRef.value && chartData.value.hotCards.length > 0) {
+    barChart = echarts.init(barChartRef.value)
+    barChart.setOption({
+      tooltip: { trigger: 'axis' },
+      grid: { left: 80, right: 20, top: 30, bottom: 30 },
+      yAxis: { type: 'category', data: chartData.value.hotCards.map(c => c.title).reverse(), axisLabel: { fontSize: 11 } },
+      xAxis: { type: 'value', minInterval: 1 },
+      series: [
+        { name: '点赞', type: 'bar', data: chartData.value.hotCards.map(c => c.likes).reverse(), itemStyle: { color: '#fbbf24', borderRadius: [0, 6, 6, 0] }, barWidth: 14 },
+        { name: '浏览', type: 'bar', data: chartData.value.hotCards.map(c => c.views).reverse(), itemStyle: { color: '#d6d3d1', borderRadius: [0, 6, 6, 0] }, barWidth: 14 }
+      ]
+    })
+  }
+
+  // 卡片状态环形图
+  if (statusChartRef.value) {
+    statusChart = echarts.init(statusChartRef.value)
+    statusChart.setOption({
+      tooltip: { trigger: 'item' },
+      color: ['#fbbf24', '#2d2d2d', '#ef4444'],
+      series: [{
+        type: 'pie', radius: ['55%', '80%'], padAngle: 4,
+        itemStyle: { borderRadius: 8 },
+        label: { show: true, fontSize: 12 },
+        data: chartData.value.statusDistribution
+      }]
+    })
+  }
+}
+
+function disposeCharts() {
+  pieChart?.dispose()
+  lineChart?.dispose()
+  barChart?.dispose()
+  statusChart?.dispose()
+}
+
+function resizeCharts() {
+  pieChart?.resize()
+  lineChart?.resize()
+  barChart?.resize()
+  statusChart?.resize()
+}
 
 const progressData = computed(() => {
   const total = dashboardStats.value.totalCards || 1
@@ -62,20 +156,56 @@ const auditProgress = computed(() => {
   return Math.round((completed / total) * 100)
 })
 
-const auditTasks = computed(() => {
-  if (auditQueue.value.length === 0) {
-    return [
-      { icon: '📝', title: '新用户注册审核', time: '今天 08:30', completed: true },
-      { icon: '🖼️', title: '图片内容审核', time: '今天 10:30', completed: true },
-      { icon: '💬', title: '评论审核', time: '今天 13:00', completed: false },
-      { icon: '📦', title: '卡片内容审核', time: '今天 16:45', completed: false },
-      { icon: '🔗', title: '链接有效性检查', time: '今天 16:50', completed: false }
-    ]
-  }
-  return auditQueue.value.slice(0, 5).map((item, index) => ({
-    id: item.id, icon: ['📝', '🖼️', '💬', '📦', '🔗'][index] || '📦',
-    title: item.title, time: item.createTime || '', completed: item.status === 1
-  }))
+// 管理员自定义 Todo 列表（localStorage 持久化）
+interface AdminTodo { id: string; title: string; completed: boolean; createdAt: string }
+const adminTodos = ref<AdminTodo[]>([])
+const newTodoText = ref('')
+
+function loadAdminTodos() {
+  try {
+    const saved = localStorage.getItem('admin_todos')
+    if (saved) {
+      adminTodos.value = JSON.parse(saved)
+    } else {
+      adminTodos.value = [
+        { id: '1', title: '审核今日新提交的卡片', completed: false, createdAt: new Date().toISOString() },
+        { id: '2', title: '检查社区广场内容质量', completed: false, createdAt: new Date().toISOString() },
+        { id: '3', title: '回复用户反馈', completed: false, createdAt: new Date().toISOString() },
+      ]
+      saveAdminTodos()
+    }
+  } catch { adminTodos.value = [] }
+}
+
+function saveAdminTodos() {
+  localStorage.setItem('admin_todos', JSON.stringify(adminTodos.value))
+}
+
+function toggleTodo(id: string) {
+  const todo = adminTodos.value.find(t => t.id === id)
+  if (todo) { todo.completed = !todo.completed; saveAdminTodos() }
+}
+
+function addTodo() {
+  if (!newTodoText.value.trim()) return
+  adminTodos.value.unshift({
+    id: Date.now().toString(),
+    title: newTodoText.value.trim(),
+    completed: false,
+    createdAt: new Date().toISOString()
+  })
+  newTodoText.value = ''
+  saveAdminTodos()
+}
+
+function removeTodo(id: string) {
+  adminTodos.value = adminTodos.value.filter(t => t.id !== id)
+  saveAdminTodos()
+}
+
+const todoProgress = computed(() => {
+  if (adminTodos.value.length === 0) return 0
+  return Math.round((adminTodos.value.filter(t => t.completed).length / adminTodos.value.length) * 100)
 })
 
 function loadUserInfo() {
@@ -202,6 +332,10 @@ function showToast(message: string) {
   }, 2000)
 }
 
+const chartsSection = ref<HTMLElement | null>(null)
+function scrollToCharts() {
+  chartsSection.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
 function goToCardDetail(cardId: number) { router.push(`/card/${cardId}`) }
 function navigateTo(path: string) { router.push(path) }
 function handleLogout() {
@@ -242,13 +376,17 @@ onMounted(() => {
   loadUserInfo()
   loadDashboardData()
   startCPUAnimation()
-  // 监听其他标签页的 localStorage 变化
+  loadChartData()
+  loadAdminTodos()
   window.addEventListener('storage', handleStorageChange)
+  window.addEventListener('resize', resizeCharts)
 })
 
 onUnmounted(() => {
   stopCPUAnimation()
+  disposeCharts()
   window.removeEventListener('storage', handleStorageChange)
+  window.removeEventListener('resize', resizeCharts)
 })
 </script>
 
@@ -263,16 +401,16 @@ onUnmounted(() => {
           <span class="text-sm font-bold text-[#2D2D2D]">Horizon</span>
         </div>
         <div class="flex items-center gap-1">
-          <div class="px-6 py-2.5 rounded-full bg-slate-900 text-white text-sm font-medium shadow-lg">仪表盘</div>
-          <button @click="navigateTo('/my')" class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D]">用户管理</button>
-          <button @click="navigateTo('/square')" class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D]">内容审核</button>
-          <button class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D]">数据统计</button>
-          <button class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D]">系统设置</button>
-          <button class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D]">操作日志</button>
+          <div class="px-6 py-2.5 rounded-full bg-slate-900 text-white text-sm font-medium shadow-lg cursor-default">仪表盘</div>
+          <button @click="showPendingList" class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D] hover:bg-white/50 rounded-full transition-all">内容审核</button>
+          <button @click="navigateTo('/square')" class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D] hover:bg-white/50 rounded-full transition-all">社区广场</button>
+          <button @click="scrollToCharts" class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D] hover:bg-white/50 rounded-full transition-all">数据统计</button>
+          <button @click="navigateTo('/profile')" class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D] hover:bg-white/50 rounded-full transition-all">个人设置</button>
+          <button @click="navigateTo('/my')" class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D] hover:bg-white/50 rounded-full transition-all">我的主页</button>
         </div>
         <div class="flex items-center gap-4">
-          <button class="text-gray-600 hover:text-[#2D2D2D] text-xl">⚙️</button>
-          <button class="text-gray-600 hover:text-[#2D2D2D] text-xl">🔔</button>
+          <button @click="navigateTo('/profile')" class="text-gray-600 hover:text-[#2D2D2D] text-xl" title="个人设置">⚙️</button>
+          <button @click="showPendingList" class="text-gray-600 hover:text-[#2D2D2D] text-xl" title="待审核">🔔</button>
           <button @click="navigateTo('/profile')" class="w-10 h-10 rounded-full border-2 border-gray-300 overflow-hidden">
             <img v-if="user?.avatar" :src="user.avatar" alt="Avatar" class="w-full h-full object-cover" />
             <div v-else class="w-full h-full bg-stone-300 flex items-center justify-center text-white font-bold">
@@ -341,28 +479,41 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- 系统管理菜单 -->
-            <div class="bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-[40px] p-8 space-y-4">
-              <div><button @click="toggleMenu('system')" class="w-full flex items-center justify-between py-3 hover:bg-white/50 rounded-xl transition-colors">
-                <span class="font-medium text-[#2D2D2D]">系统设置</span><span class="text-stone-400">{{ expandedMenus.system ? '∧' : '∨' }}</span></button></div>
-              <div>
-                <button @click="toggleMenu('users')" class="w-full flex items-center justify-between py-3 hover:bg-white/50 rounded-xl transition-colors">
-                  <span class="font-medium text-[#2D2D2D]">用户管理</span><span class="text-stone-400">{{ expandedMenus.users ? '∧' : '∨' }}</span></button>
-                <div v-if="expandedMenus.users" class="mt-3 pl-4">
-                  <div class="flex items-center gap-3 p-3 bg-white/50 rounded-xl cursor-pointer hover:bg-white/70" @click="navigateTo('/my')">
-                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex-shrink-0 flex items-center justify-center text-white text-lg">👥</div>
-                    <div class="flex-1">
-                      <div class="font-semibold text-[#2D2D2D]">用户列表</div>
-                      <div class="text-xs text-stone-500">{{ dashboardStats.totalUsers }} 个用户</div>
-                    </div>
-                    <button class="text-stone-400 hover:text-[#2D2D2D]">→</button>
-                  </div>
+            <!-- 快捷操作 -->
+            <div class="bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-[40px] p-8 space-y-3">
+              <h3 class="font-bold text-[#2D2D2D] mb-2">快捷操作</h3>
+              <div class="flex items-center gap-3 p-3 bg-white/50 rounded-xl cursor-pointer hover:bg-white/70 transition-all" @click="showPendingList">
+                <div class="w-10 h-10 bg-amber-100 rounded-lg flex-shrink-0 flex items-center justify-center text-lg">📦</div>
+                <div class="flex-1">
+                  <div class="font-semibold text-sm text-[#2D2D2D]">内容审核</div>
+                  <div class="text-xs text-stone-500">{{ dashboardStats.pendingAudit }} 条待审核</div>
                 </div>
+                <span class="text-stone-400">→</span>
               </div>
-              <div><button @click="toggleMenu('statistics')" class="w-full flex items-center justify-between py-3 hover:bg-white/50 rounded-xl transition-colors">
-                <span class="font-medium text-[#2D2D2D]">内容统计</span><span class="text-stone-400">{{ expandedMenus.statistics ? '∧' : '∨' }}</span></button></div>
-              <div><button @click="toggleMenu('logs')" class="w-full flex items-center justify-between py-3 hover:bg-white/50 rounded-xl transition-colors">
-                <span class="font-medium text-[#2D2D2D]">审核日志</span><span class="text-stone-400">{{ expandedMenus.logs ? '∧' : '∨' }}</span></button></div>
+              <div class="flex items-center gap-3 p-3 bg-white/50 rounded-xl cursor-pointer hover:bg-white/70 transition-all" @click="navigateTo('/square')">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex-shrink-0 flex items-center justify-center text-lg">🌍</div>
+                <div class="flex-1">
+                  <div class="font-semibold text-sm text-[#2D2D2D]">社区广场</div>
+                  <div class="text-xs text-stone-500">{{ dashboardStats.totalCards }} 张卡片</div>
+                </div>
+                <span class="text-stone-400">→</span>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-white/50 rounded-xl cursor-pointer hover:bg-white/70 transition-all" @click="scrollToCharts">
+                <div class="w-10 h-10 bg-emerald-100 rounded-lg flex-shrink-0 flex items-center justify-center text-lg">📊</div>
+                <div class="flex-1">
+                  <div class="font-semibold text-sm text-[#2D2D2D]">数据统计</div>
+                  <div class="text-xs text-stone-500">查看趋势图表</div>
+                </div>
+                <span class="text-stone-400">→</span>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-white/50 rounded-xl cursor-pointer hover:bg-white/70 transition-all" @click="navigateTo('/profile')">
+                <div class="w-10 h-10 bg-purple-100 rounded-lg flex-shrink-0 flex items-center justify-center text-lg">⚙️</div>
+                <div class="flex-1">
+                  <div class="font-semibold text-sm text-[#2D2D2D]">个人设置</div>
+                  <div class="text-xs text-stone-500">修改资料和密码</div>
+                </div>
+                <span class="text-stone-400">→</span>
+              </div>
             </div>
           </div>
 
@@ -392,98 +543,74 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <!-- 在线时长卡片 -->
+              <!-- 卡片类型分布 -->
               <div class="bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-[40px] p-8 flex flex-col">
-                <div class="flex items-center justify-between mb-6">
-                  <h3 class="text-xl font-bold text-[#2D2D2D]">在线时长</h3>
-                  <button class="text-stone-400 hover:text-[#2D2D2D]">↗</button>
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-xl font-bold text-[#2D2D2D]">卡片类型分布</h3>
                 </div>
-                <div class="flex-1 flex items-center justify-center relative">
-                  <svg class="w-48 h-48 -rotate-90">
-                    <circle cx="96" cy="96" r="80" stroke="#E5E7EB" stroke-width="12" fill="none" />
-                    <circle cx="96" cy="96" r="80" stroke="#FCD34D" stroke-width="12" fill="none" stroke-linecap="round" :stroke-dasharray="`${onlineProgress * 5.02} 502`" />
-                  </svg>
-                  <div class="absolute inset-0 flex flex-col items-center justify-center">
-                    <div class="text-5xl font-bold text-[#2D2D2D]">{{ onlineTime }}</div>
-                    <div class="text-sm text-stone-500 mt-2">今日在线</div>
-                  </div>
-                </div>
-                <div class="flex items-center justify-center gap-4 mt-6">
-                  <button class="w-12 h-12 rounded-full bg-white border-2 border-stone-200 flex items-center justify-center hover:bg-stone-50">▶</button>
-                  <button class="w-12 h-12 rounded-full bg-white border-2 border-stone-200 flex items-center justify-center hover:bg-stone-50">⏸</button>
-                  <button class="w-16 h-16 rounded-full bg-slate-900 text-white flex items-center justify-center text-2xl hover:bg-slate-800">⏱</button>
+                <div ref="pieChartRef" style="width: 100%; height: 260px;"></div>
+                <div class="mt-2">
+                  <h4 class="text-sm font-bold text-[#2D2D2D] mb-2">审核状态</h4>
+                  <div ref="statusChartRef" style="width: 100%; height: 140px;"></div>
                 </div>
               </div>
             </div>
 
-            <!-- 日历视图 - 精简 -->
-            <div class="bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-[40px] p-8 flex-1">
-              <div class="flex items-center justify-between mb-6">
-                <button class="text-sm font-medium text-stone-600 hover:text-[#2D2D2D]">上个月</button>
-                <h3 class="text-lg font-bold text-[#2D2D2D]">{{ currentMonth }}</h3>
-                <button class="text-sm font-medium text-stone-600 hover:text-[#2D2D2D]">下个月</button>
+            <!-- 数据趋势图 -->
+            <div ref="chartsSection" class="bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-[40px] p-8 flex-1">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-[#2D2D2D]">数据趋势（近30天）</h3>
               </div>
-              <div class="grid grid-cols-6 gap-4 mb-4">
-                <div v-for="day in calendarDays" :key="day.date" class="text-center">
-                  <div class="text-xs text-stone-500 mb-1">{{ day.day }}</div>
-                  <div class="text-lg font-semibold text-[#2D2D2D]">{{ day.date }}</div>
-                </div>
-              </div>
-              <div class="space-y-2">
-                <div class="flex items-center gap-4"><span class="text-sm text-stone-500 w-20">9:00</span>
-                  <div class="flex-1 relative">
-                    <div class="absolute left-[33%] right-0 bg-slate-900 text-white px-4 py-3 rounded-2xl flex items-center gap-3">
-                      <div class="flex-1"><div class="font-semibold text-sm">批量审核任务</div><div class="text-xs opacity-70">审核新提交的卡片内容</div></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <div ref="lineChartRef" style="width: 100%; height: 280px;"></div>
             </div>
           </div>
 
-          <!-- 右侧列 - 审核任务 -->
+          <!-- 右侧列 - 审核任务 & 热门卡片 -->
           <div class="col-span-3 flex flex-col gap-6">
+            <!-- 热门卡片排行 -->
+            <div class="bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-[40px] p-8">
+              <h3 class="text-xl font-bold text-[#2D2D2D] mb-4">热门卡片 TOP10</h3>
+              <div ref="barChartRef" style="width: 100%; height: 300px;"></div>
+            </div>
+
             <div class="bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-[40px] p-8 flex flex-col flex-1">
               <div class="flex items-start justify-between mb-6">
-                <h3 class="text-xl font-bold text-[#2D2D2D]">审核任务</h3>
-                <div class="text-5xl font-light text-[#2D2D2D]">{{ auditProgress }}%</div>
+                <h3 class="text-xl font-bold text-[#2D2D2D]">待办事项</h3>
+                <div class="text-5xl font-light text-[#2D2D2D]">{{ todoProgress }}%</div>
               </div>
-              <div class="space-y-4 mb-6">
-                <div class="flex items-center gap-3">
-                  <div class="flex-1 h-12 rounded-full overflow-hidden flex items-center px-4 bg-yellow-300">
-                    <span class="text-sm font-semibold text-[#2D2D2D]">待处理</span>
-                  </div>
-                  <span class="text-xs text-stone-500 w-12 text-right">{{ auditQueue.length }}</span>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="flex-1 h-12 rounded-full overflow-hidden bg-slate-900"></div>
-                  <span class="text-xs text-stone-500 w-12 text-right">{{ approvedCards.length }}</span>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="flex-1 h-12 rounded-full overflow-hidden bg-stone-300"></div>
-                  <span class="text-xs text-stone-500 w-12 text-right">0</span>
-                </div>
-              </div>
+
+              <!-- 添加新待办 -->
+              <form @submit.prevent="addTodo" class="flex gap-2 mb-4">
+                <input v-model="newTodoText" placeholder="添加新待办..."
+                  class="flex-1 px-4 py-3 bg-white/70 border border-white/80 rounded-2xl text-sm text-slate-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-200/60" />
+                <button type="submit" class="px-5 py-3 bg-slate-900 text-white rounded-2xl text-sm font-semibold hover:scale-105 transition-all">+</button>
+              </form>
+
+              <!-- Todo 列表 -->
               <div class="flex-1 bg-[#2A2A2A] rounded-[32px] p-6 overflow-hidden">
                 <div class="flex items-center justify-between mb-4">
-                  <h4 class="text-white font-bold">待审核列表</h4>
-                  <span class="text-white text-xl font-light">{{ auditQueue.length }}/{{ auditQueue.length + approvedCards.length }}</span>
+                  <h4 class="text-white font-bold">任务列表</h4>
+                  <span class="text-white/60 text-sm">{{ adminTodos.filter(t => t.completed).length }}/{{ adminTodos.length }}</span>
                 </div>
                 <div class="space-y-3 max-h-[300px] overflow-y-auto">
-                  <div v-for="(task, index) in auditTasks" :key="index" class="flex items-center gap-3 group">
-                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg flex-shrink-0">{{ task.icon }}</div>
-                    <div class="flex-1 min-w-0 cursor-pointer" @click="task.id && goToCardDetail(task.id)">
-                      <div class="text-sm font-medium text-white/90 group-hover:text-white transition-all truncate">{{ task.title }}</div>
-                      <div class="text-xs text-white/40">{{ task.time }}</div>
+                  <div v-if="adminTodos.length === 0" class="text-center py-8 text-white/30 text-sm">暂无待办事项</div>
+                  <div v-for="todo in adminTodos" :key="todo.id" class="flex items-center gap-3 group">
+                    <button @click="toggleTodo(todo.id)"
+                      class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
+                      :class="todo.completed ? 'bg-yellow-300' : 'bg-white/10 hover:bg-yellow-300/30'">
+                      <span v-if="todo.completed" class="text-[#2D2D2D] text-xs font-bold">✓</span>
+                    </button>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-sm font-medium transition-all truncate"
+                        :class="todo.completed ? 'text-white/30 line-through' : 'text-white/90'">
+                        {{ todo.title }}
+                      </div>
                     </div>
-                    <button v-if="task.completed" class="w-6 h-6 rounded-full bg-yellow-300 flex items-center justify-center flex-shrink-0">
-                      <span class="text-[#2D2D2D] text-xs">✓</span>
+                    <button @click="removeTodo(todo.id)"
+                      class="w-6 h-6 rounded-full bg-white/5 hover:bg-rose-500/30 flex items-center justify-center flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all"
+                      title="删除">
+                      <span class="text-white/40 hover:text-rose-300 text-xs">✕</span>
                     </button>
-                    <button v-else-if="task.id" @click="handleAuditFromList(task, 1, index)"
-                      class="w-6 h-6 rounded-full bg-white/10 hover:bg-yellow-300 flex items-center justify-center flex-shrink-0 transition-all group-hover:bg-yellow-300/20" title="标记为已审核">
-                      <span class="text-white/40 group-hover:text-white text-xs">✓</span>
-                    </button>
-                    <div v-else class="w-6 h-6 rounded-full bg-white/10 flex-shrink-0"></div>
                   </div>
                 </div>
               </div>

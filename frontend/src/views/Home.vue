@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { getUserCards, createCard, updateCard, deleteCard, type BentoCard } from '../api/card'
 import BentoCardComponent from '../components/BentoCard.vue'
 import NotificationBell from '../components/NotificationBell.vue'
@@ -56,20 +56,151 @@ function loadUserInfo() {
   }
 }
 
+// 分类筛选
+const activeCategory = ref<string>('all')
+const categories = ref<string[]>([])
+
 // 加载卡片
 async function loadCards() {
   loading.value = true
   try {
-    console.log('加载卡片，userId:', userId.value)
     const data = await getUserCards(userId.value)
-    console.log('获取到的卡片数据：', data)
     cards.value = data || []
+    extractCategories()
   } catch (error: any) {
-    console.error('加载卡片失败:', error)
     alert('加载卡片失败: ' + error.message)
   } finally {
     loading.value = false
   }
+}
+
+function extractCategories() {
+  const cats = new Set<string>()
+  cards.value.forEach(c => { if (c.category) cats.add(c.category) })
+  categories.value = Array.from(cats)
+}
+
+const filteredCards = computed(() => {
+  if (activeCategory.value === 'all') return cards.value
+  return cards.value.filter(c => c.category === activeCategory.value)
+})
+
+function setCategory(cat: string) {
+  activeCategory.value = cat
+}
+
+// 拖拽排序
+const dragIndex = ref<number | null>(null)
+const dragOverIndex = ref<number | null>(null)
+
+function onDragStart(index: number) {
+  dragIndex.value = index
+}
+
+function onDragOver(e: DragEvent, index: number) {
+  e.preventDefault()
+  dragOverIndex.value = index
+}
+
+function onDragLeave() {
+  dragOverIndex.value = null
+}
+
+function onDragEnd() {
+  dragIndex.value = null
+  dragOverIndex.value = null
+}
+
+async function onDrop(targetIndex: number) {
+  dragOverIndex.value = null
+  if (dragIndex.value === null || dragIndex.value === targetIndex) {
+    dragIndex.value = null
+    return
+  }
+  const arr = [...filteredCards.value]
+  const [moved] = arr.splice(dragIndex.value, 1)
+  arr.splice(targetIndex, 0, moved)
+  cards.value = arr
+  dragIndex.value = null
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i].sortOrder !== i) {
+      arr[i].sortOrder = i
+      try { await updateCard(arr[i]) } catch {}
+    }
+  }
+}
+
+// 调整卡片大小
+const gridRef = ref<HTMLElement | null>(null)
+const resizingCard = ref<BentoCard | null>(null)
+const resizeDirection = ref<'right' | 'bottom' | 'corner'>('corner')
+const resizeStartX = ref(0)
+const resizeStartY = ref(0)
+const resizeInitW = ref(1)
+const resizeInitH = ref(1)
+const resizePreviewW = ref(1)
+const resizePreviewH = ref(1)
+const isResizing = ref(false)
+
+const BASE_ROW_HEIGHT = 180
+
+function getGridCellSize() {
+  if (!gridRef.value) return { cellW: 200, cellH: BASE_ROW_HEIGHT }
+  const gridRect = gridRef.value.getBoundingClientRect()
+  const style = getComputedStyle(gridRef.value)
+  const gap = Number.parseFloat(style.gap) || 24
+  const width = gridRect.width
+  let cols = 1
+  if (width >= 1280) cols = 4
+  else if (width >= 1024) cols = 3
+  else if (width >= 768) cols = 2
+  const cellW = (width - (cols - 1) * gap) / cols
+  return { cellW: cellW + gap, cellH: BASE_ROW_HEIGHT + gap }
+}
+
+function onResizeStart(event: MouseEvent, card: BentoCard, direction: 'right' | 'bottom' | 'corner') {
+  resizingCard.value = card
+  resizeDirection.value = direction
+  resizeStartX.value = event.clientX
+  resizeStartY.value = event.clientY
+  resizeInitW.value = card.gridWidth || 1
+  resizeInitH.value = card.gridHeight || 1
+  resizePreviewW.value = resizeInitW.value
+  resizePreviewH.value = resizeInitH.value
+  isResizing.value = true
+  document.addEventListener('mousemove', onResizeMove)
+  document.addEventListener('mouseup', onResizeEnd)
+}
+
+function onResizeMove(e: MouseEvent) {
+  if (!resizingCard.value) return
+  const { cellW, cellH } = getGridCellSize()
+  const deltaX = e.clientX - resizeStartX.value
+  const deltaY = e.clientY - resizeStartY.value
+
+  if (resizeDirection.value === 'right' || resizeDirection.value === 'corner') {
+    const newW = Math.round(resizeInitW.value + deltaX / cellW)
+    resizePreviewW.value = Math.max(1, Math.min(4, newW))
+  }
+  if (resizeDirection.value === 'bottom' || resizeDirection.value === 'corner') {
+    const newH = Math.round(resizeInitH.value + deltaY / cellH)
+    resizePreviewH.value = Math.max(1, Math.min(4, newH))
+  }
+
+  resizingCard.value.gridWidth = resizePreviewW.value
+  resizingCard.value.gridHeight = resizePreviewH.value
+}
+
+async function onResizeEnd() {
+  document.removeEventListener('mousemove', onResizeMove)
+  document.removeEventListener('mouseup', onResizeEnd)
+  if (resizingCard.value) {
+    try {
+      await updateCard(resizingCard.value)
+    } catch {}
+  }
+  isResizing.value = false
+  resizingCard.value = null
 }
 
 // 切换编辑模式
@@ -106,17 +237,11 @@ function openAddCardDialog() {
 // 添加卡片
 async function handleAddCard() {
   try {
-    console.log('创建卡片，数据：', newCard.value)
-    const result = await createCard(newCard.value as BentoCard)
-    console.log('创建成功，返回：', result)
-    
-    await loadCards()  // 重新加载卡片列表
-    console.log('重新加载后的卡片列表：', cards.value)
-    
+    await createCard(newCard.value as BentoCard)
+    await loadCards()
     showAddCardDialog.value = false
     alert('卡片创建成功！')
   } catch (error: any) {
-    console.error('添加卡片失败:', error)
     alert('添加卡片失败: ' + error.message)
   }
 }
@@ -300,6 +425,13 @@ onUnmounted(() => {
               </button>
 
               <button
+                @click="$router.push('/favorites')"
+                class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
+              >
+                ⭐ 我的收藏
+              </button>
+
+              <button
                 @click="openAddCardDialog"
                 class="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-300 via-orange-200 to-stone-200 text-slate-900 font-semibold shadow-md hover:scale-105 transition-all duration-300"
               >
@@ -366,6 +498,23 @@ onUnmounted(() => {
 
     <!-- 主内容 -->
     <main class="max-w-7xl mx-auto px-8 py-12">
+      <!-- 分类筛选标签 -->
+      <div v-if="categories.length > 0 && !loading" class="mb-8 flex items-center gap-3 flex-wrap">
+        <span class="text-sm text-stone-500">分类:</span>
+        <button
+          @click="setCategory('all')"
+          class="px-5 py-2 rounded-2xl text-sm transition-all duration-300"
+          :class="activeCategory === 'all' ? 'bg-gradient-to-r from-amber-300 via-orange-200 to-stone-200 text-slate-900 font-semibold shadow-md' : 'bg-white/80 text-slate-700 border border-white/60 hover:bg-white'"
+        >全部</button>
+        <button
+          v-for="cat in categories"
+          :key="cat"
+          @click="setCategory(cat)"
+          class="px-5 py-2 rounded-2xl text-sm transition-all duration-300"
+          :class="activeCategory === cat ? 'bg-gradient-to-r from-amber-300 via-orange-200 to-stone-200 text-slate-900 font-semibold shadow-md' : 'bg-white/80 text-slate-700 border border-white/60 hover:bg-white'"
+        >{{ cat }}</button>
+      </div>
+
       <!-- 加载中 -->
       <div v-if="loading" class="text-center py-20">
         <div class="text-stone-500">加载中...</div>
@@ -387,20 +536,48 @@ onUnmounted(() => {
         </div>
       </div>
 
+      <!-- 编辑模式提示 -->
+      <div v-if="isEditMode && filteredCards.length > 1" class="mb-4 p-4 bg-amber-50/80 rounded-2xl text-sm text-amber-800 flex items-center gap-2">
+        <span>💡</span> 拖拽卡片调整顺序 | 拖拽卡片右侧/底部/右下角边框调整大小 | 勾选可批量删除
+      </div>
+
       <!-- Bento Grid 布局 -->
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div v-if="!loading && filteredCards.length > 0" ref="gridRef" class="bento-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" :class="{ 'select-none': isResizing }">
         <div
-          v-for="card in cards"
+          v-for="(card, index) in filteredCards"
           :key="card.id"
-          class="relative"
+          class="relative transition-all duration-200 h-full"
+          :class="[
+            isEditMode ? 'drag-item' : '',
+            isEditMode && dragIndex === index ? 'opacity-50 scale-95' : '',
+            isEditMode && dragOverIndex === index && dragOverIndex !== dragIndex ? 'ring-2 ring-amber-300 ring-offset-2 rounded-3xl' : '',
+            (card.gridWidth || 1) >= 2 ? `md:col-span-${Math.min(card.gridWidth || 1, 4)}` : '',
+            (card.gridHeight || 1) >= 2 ? `row-span-${Math.min(card.gridHeight || 1, 4)}` : ''
+          ]"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index)"
+          @dragover="onDragOver($event, index)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index)"
+          @dragend="onDragEnd"
         >
-          <!-- 编辑模式复选框 -->
+          <!-- 编辑模式工具栏 -->
           <div
             v-if="isEditMode"
-            class="absolute top-4 left-4 z-10"
-            @click.stop="toggleCardSelection(card.id!)"
+            class="absolute top-4 left-4 z-10 flex items-center gap-2"
           >
+            <!-- 拖拽手柄 -->
+            <div class="w-8 h-8 rounded-lg bg-white/90 shadow flex items-center justify-center cursor-grab active:cursor-grabbing text-stone-400 hover:text-slate-700 transition-colors">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
+                <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+                <circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/>
+              </svg>
+            </div>
+
+            <!-- 复选框 -->
             <div
+              @click.stop="toggleCardSelection(card.id!)"
               class="w-8 h-8 rounded-lg cursor-pointer transition-all duration-200"
               :class="selectedCardIds.has(card.id!) 
                 ? 'bg-gradient-to-r from-amber-300 to-orange-200 shadow-lg scale-110' 
@@ -423,6 +600,7 @@ onUnmounted(() => {
             :edit-mode="isEditMode"
             @edit="openEditCardDialog"
             @delete="handleDeleteCard"
+            @resize-start="onResizeStart"
           />
         </div>
       </div>
@@ -771,5 +949,30 @@ onUnmounted(() => {
 
 * {
   font-family: 'Inter', sans-serif;
+}
+
+.drag-item {
+  cursor: grab;
+}
+.drag-item:active {
+  cursor: grabbing;
+}
+
+/* Bento Grid 固定行高，使 row-span 生效 */
+.bento-grid {
+  grid-auto-rows: minmax(180px, auto);
+}
+
+/* Grid span（动态类名 Tailwind 无法编译，需手写） */
+.md\:col-span-2 { @media (min-width: 768px) { grid-column: span 2 / span 2; } }
+.md\:col-span-3 { @media (min-width: 768px) { grid-column: span 3 / span 3; } }
+.md\:col-span-4 { @media (min-width: 768px) { grid-column: span 4 / span 4; } }
+.row-span-2 { grid-row: span 2 / span 2; }
+.row-span-3 { grid-row: span 3 / span 3; }
+.row-span-4 { grid-row: span 4 / span 4; }
+
+.select-none {
+  user-select: none;
+  -webkit-user-select: none;
 }
 </style>

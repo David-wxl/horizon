@@ -19,13 +19,12 @@ export async function request<T>(
 ): Promise<T> {
   const { method = 'GET', headers = {}, body } = options
 
-  // 自动添加 JWT Token
   const token = localStorage.getItem('token')
   const config: RequestInit = {
     method,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': token } : {}),
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...headers,
     },
   }
@@ -36,6 +35,15 @@ export async function request<T>(
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config)
   const data = await response.json()
+
+  if (data.code === 401) {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    if (globalThis.location.pathname !== '/login') {
+      globalThis.location.href = '/login'
+    }
+    throw new Error(data.message || '请先登录')
+  }
 
   if (data.code !== 200) {
     throw new Error(data.message || '请求失败')

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { post } from '../api/request'
+import { ref, watch } from 'vue'
+import { post, get } from '../api/request'
 
-const isLogin = ref(true) // true: 登录, false: 注册
+const isLogin = ref(true)
 const formData = ref({
   username: '',
   password: '',
@@ -12,13 +12,33 @@ const formData = ref({
 const loading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+const usernameStatus = ref<'idle' | 'checking' | 'taken' | 'available'>('idle')
+let usernameTimer: ReturnType<typeof setTimeout> | null = null
 
-// 切换登录/注册
 function toggleMode() {
   isLogin.value = !isLogin.value
   errorMessage.value = ''
   successMessage.value = ''
+  usernameStatus.value = 'idle'
 }
+
+watch(() => formData.value.username, (val) => {
+  if (isLogin.value) return
+  if (usernameTimer) clearTimeout(usernameTimer)
+  if (!val || val.length < 2) {
+    usernameStatus.value = 'idle'
+    return
+  }
+  usernameStatus.value = 'checking'
+  usernameTimer = setTimeout(async () => {
+    try {
+      const exists = await get<boolean>(`/user/checkUsername?username=${encodeURIComponent(val)}`)
+      usernameStatus.value = exists ? 'taken' : 'available'
+    } catch {
+      usernameStatus.value = 'idle'
+    }
+  }, 500)
+})
 
 // 登录
 async function handleLogin() {
@@ -65,6 +85,11 @@ async function handleRegister() {
 
   if (formData.value.password.length < 6) {
     errorMessage.value = '密码长度至少6位'
+    return
+  }
+
+  if (usernameStatus.value === 'taken') {
+    errorMessage.value = '用户名已被占用，请换一个'
     return
   }
 
@@ -137,14 +162,24 @@ function handleSubmit() {
               <!-- 用户名 -->
               <div class="md:col-span-2">
                 <label class="block text-stone-600 mb-2" for="login-username">用户名</label>
-                <input
-                  v-model="formData.username"
-                  type="text"
-                  id="login-username"
-                  class="w-full px-6 py-4 bg-white/80 border border-white/60 rounded-3xl text-slate-900 placeholder-stone-400 focus:outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-200/60 transition-all"
-                  placeholder="请输入用户名"
-                  :disabled="loading"
-                />
+                <div class="relative">
+                  <input
+                    v-model="formData.username"
+                    type="text"
+                    id="login-username"
+                    class="w-full px-6 py-4 bg-white/80 border rounded-3xl text-slate-900 placeholder-stone-400 focus:outline-none focus:ring-2 transition-all"
+                    :class="!isLogin && usernameStatus === 'taken'
+                      ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-200/60'
+                      : !isLogin && usernameStatus === 'available'
+                        ? 'border-emerald-300 focus:border-emerald-400 focus:ring-emerald-200/60'
+                        : 'border-white/60 focus:border-amber-300 focus:ring-amber-200/60'"
+                    placeholder="请输入用户名（注册后不可更改）"
+                    :disabled="loading"
+                  />
+                  <span v-if="!isLogin && usernameStatus === 'checking'" class="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 text-sm">检查中...</span>
+                  <span v-else-if="!isLogin && usernameStatus === 'taken'" class="absolute right-4 top-1/2 -translate-y-1/2 text-rose-500 text-sm">❌ 已被占用</span>
+                  <span v-else-if="!isLogin && usernameStatus === 'available'" class="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500 text-sm">✓ 可以使用</span>
+                </div>
               </div>
 
               <!-- 密码 -->

@@ -106,3 +106,16 @@ export const adminDeleteCard = (cardId: number) => {
 export const adminDeleteComment = (commentId: number) => {
   return del<boolean>(`/admin/comment/delete/${commentId}`)
 }
+
+// 获取图表数据
+export interface ChartData {
+  typeDistribution: { name: string; value: number }[]
+  dailyCards: { date: string; count: number }[]
+  dailyUsers: { date: string; count: number }[]
+  statusDistribution: { name: string; value: number }[]
+  hotCards: { title: string; likes: number; views: number; comments: number }[]
+}
+
+export const getChartData = () => {
+  return get<ChartData>('/admin/chart-data')
+}

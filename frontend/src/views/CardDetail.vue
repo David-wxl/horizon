@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getCardDetail, deleteCard, type BentoCard } from '../api/card'
+import { request } from '../api/request'
 import { addComment, getComments, deleteComment, type Comment } from '../api/comment'
 import { addLike, removeLike } from '../api/like'
 import hljs from 'highlight.js'
@@ -28,6 +29,15 @@ const isLiked = ref(false)
 const likeCount = ref(0)
 const likeAnimating = ref(false)
 
+// 卡片作者
+const cardAuthor = ref<any>(null)
+
+async function loadAuthorInfo(userId: number) {
+  try {
+    cardAuthor.value = await request<any>(`/user/${userId}`, { method: 'GET' })
+  } catch {}
+}
+
 // 加载卡片详情
 async function loadCardDetail() {
   loading.value = true
@@ -35,9 +45,12 @@ async function loadCardDetail() {
     const cardId = Number(route.params.id)
     card.value = await getCardDetail(cardId)
     likeCount.value = card.value.likeCount || 0
+    if (card.value.userId) {
+      await loadAuthorInfo(card.value.userId)
+    }
     await loadComments()
   } catch (error: any) {
-    console.error('加载卡片详情失败:', error)
+    alert('加载卡片详情失败')
   } finally {
     loading.value = false
   }
@@ -144,13 +157,6 @@ async function handleDeleteCard() {
     user.value = JSON.parse(userStr)
   }
   
-  console.log('=== 前端删除卡片调试 ===')
-  console.log('卡片ID:', card.value.id)
-  console.log('卡片作者ID:', card.value.userId)
-  console.log('当前用户:', user.value)
-  console.log('用户ID:', user.value.id)
-  console.log('用户角色:', user.value.role)
-  
   const isAdmin = user.value.role === 'ADMIN'
   const message = isAdmin 
     ? '⚠️ 管理员操作：确定要删除这张卡片吗？此操作不可恢复！' 
@@ -201,25 +207,93 @@ async function handleDeleteComment(comment: Comment) {
   }
 }
 
-// 代码高亮
-const highlightedCode = computed(() => {
-  if (!card.value || card.value.cardType !== 'code') return ''
-  
+// JSON 内容解析
+function parseContentJson(content: string): Record<string, any> | null {
+  if (!content) return null
   try {
-    return hljs.highlightAuto(card.value.content).value
+    const trimmed = content.trim()
+    if (trimmed.startsWith('{')) return JSON.parse(trimmed)
+  } catch {}
+  return null
+}
+
+// 代码高亮
+const codeText = computed(() => {
+  if (!card.value || card.value.cardType !== 'code') return ''
+  const parsed = parseContentJson(card.value.content)
+  return parsed?.code || card.value.content
+})
+
+const codeLanguage = computed(() => {
+  if (!card.value || card.value.cardType !== 'code') return ''
+  const parsed = parseContentJson(card.value.content)
+  return parsed?.language || ''
+})
+
+const highlightedCode = computed(() => {
+  if (!codeText.value) return ''
+  try {
+    if (codeLanguage.value && hljs.getLanguage(codeLanguage.value)) {
+      return hljs.highlight(codeText.value, { language: codeLanguage.value }).value
+    }
+    return hljs.highlightAuto(codeText.value).value
   } catch {
-    return card.value.content
+    return codeText.value
   }
 })
 
 // Markdown 渲染
 const markdownContent = computed(() => {
   if (!card.value || card.value.cardType !== 'text') return ''
-  
   try {
-    return marked(card.value.content)
+    const parsed = parseContentJson(card.value.content)
+    const md = parsed?.markdown || parsed?.content || card.value.content
+    return marked(md)
   } catch {
     return card.value.content
+  }
+})
+
+// 图片
+const imageUrl = computed(() => {
+  if (!card.value || card.value.cardType !== 'image') return ''
+  const parsed = parseContentJson(card.value.content)
+  if (parsed?.urls?.length > 0) return parsed.urls[0]
+  if (card.value.content.startsWith('http') || card.value.content.startsWith('data:')) return card.value.content
+  return ''
+})
+
+const imageCaption = computed(() => {
+  if (!card.value) return ''
+  const parsed = parseContentJson(card.value.content)
+  return parsed?.caption || ''
+})
+
+// 链接
+const linkUrl = computed(() => {
+  if (!card.value || card.value.cardType !== 'link') return ''
+  const parsed = parseContentJson(card.value.content)
+  return parsed?.url || card.value.content
+})
+
+const linkInfo = computed(() => {
+  if (!card.value) return { title: '', description: '' }
+  const parsed = parseContentJson(card.value.content)
+  return { title: parsed?.title || '', description: parsed?.description || '' }
+})
+
+// 书影音
+const mediaInfo = computed(() => {
+  if (!card.value || card.value.cardType !== 'media') return null
+  const parsed = parseContentJson(card.value.content)
+  if (!parsed) return null
+  return {
+    type: parsed.type || 'book',
+    title: parsed.title || '',
+    author: parsed.author || parsed.artist || '',
+    cover: parsed.cover || '',
+    rating: parsed.rating || 0,
+    comment: parsed.comment || ''
   }
 })
 
@@ -242,12 +316,6 @@ onMounted(() => {
   const userStr = localStorage.getItem('user')
   if (userStr) {
     user.value = JSON.parse(userStr)
-    console.log('=== 详情页用户信息 ===')
-    console.log('用户信息:', user.value)
-    console.log('用户ID:', user.value.id)
-    console.log('用户角色:', user.value.role)
-  } else {
-    console.log('未登录')
   }
   loadCardDetail()
 })
@@ -310,50 +378,48 @@ onMounted(() => {
           <!-- 卡片内容 -->
           <div class="mb-8">
             <!-- 代码类型 -->
-            <div
-              v-if="card.cardType === 'code'"
-              class="p-6 bg-slate-900 rounded-2xl overflow-x-auto"
-            >
-              <pre class="text-sm font-mono"><code v-html="highlightedCode"></code></pre>
+            <div v-if="card.cardType === 'code'" class="relative">
+              <div v-if="codeLanguage" class="absolute top-3 left-4 text-xs text-white/40 uppercase tracking-wider">{{ codeLanguage }}</div>
+              <div class="p-6 pt-10 bg-slate-900 rounded-2xl overflow-x-auto">
+                <pre class="text-sm font-mono leading-relaxed"><code v-html="highlightedCode"></code></pre>
+              </div>
             </div>
 
             <!-- 图片类型 -->
-            <div
-              v-else-if="card.cardType === 'image'"
-              class="rounded-2xl overflow-hidden bg-stone-100"
-            >
-              <img
-                v-if="card.content.startsWith('http') || card.content.startsWith('data:')"
-                :src="card.content"
-                :alt="card.title"
-                class="w-full object-cover"
-              />
+            <div v-else-if="card.cardType === 'image'" class="rounded-2xl overflow-hidden bg-stone-100">
+              <img v-if="imageUrl" :src="imageUrl" :alt="card.title" class="w-full object-cover" />
               <div v-else class="p-16 text-center text-stone-500">
                 <span class="text-6xl">🖼️</span>
                 <p class="mt-4 text-lg">图片预览</p>
               </div>
+              <p v-if="imageCaption" class="text-sm text-stone-500 px-4 py-3">{{ imageCaption }}</p>
+            </div>
+
+            <!-- 书影音类型 -->
+            <div v-else-if="card.cardType === 'media' && mediaInfo" class="p-8 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl">
+              <div class="flex gap-6">
+                <img v-if="mediaInfo.cover" :src="mediaInfo.cover" :alt="mediaInfo.title" class="w-32 h-44 object-cover rounded-xl shadow-lg flex-shrink-0" />
+                <div class="flex-1">
+                  <div class="text-xs text-stone-500 uppercase tracking-wider mb-1">{{ mediaInfo.type === 'book' ? '书籍' : mediaInfo.type === 'music' ? '音乐' : '影视' }}</div>
+                  <h3 class="text-2xl font-bold text-slate-900 mb-1">{{ mediaInfo.title }}</h3>
+                  <div v-if="mediaInfo.author" class="text-sm text-stone-600 mb-3">{{ mediaInfo.author }}</div>
+                  <div v-if="mediaInfo.rating" class="text-lg mb-3">{{ '⭐'.repeat(mediaInfo.rating) }}</div>
+                  <p v-if="mediaInfo.comment" class="text-stone-700 leading-relaxed">{{ mediaInfo.comment }}</p>
+                </div>
+              </div>
             </div>
 
             <!-- 链接类型 -->
-            <div
-              v-else-if="card.cardType === 'link'"
-              class="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl"
-            >
-              <a 
-                :href="card.content" 
-                target="_blank"
-                rel="noopener noreferrer"
-                class="block group"
-              >
-                <div class="flex items-center gap-4 mb-4">
+            <div v-else-if="card.cardType === 'link'" class="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl">
+              <a :href="linkUrl" target="_blank" rel="noopener noreferrer" class="block group">
+                <div class="flex items-center gap-4 mb-3">
                   <span class="text-4xl">🔗</span>
                   <span class="text-lg font-semibold text-blue-600 group-hover:text-blue-700 transition-colors">
-                    点击访问链接
+                    {{ linkInfo.title || '点击访问链接' }}
                   </span>
                 </div>
-                <div class="text-base text-stone-600 break-all">
-                  {{ card.content }}
-                </div>
+                <p v-if="linkInfo.description" class="text-stone-600 mb-2">{{ linkInfo.description }}</p>
+                <div class="text-sm text-blue-500 break-all">{{ linkUrl }}</div>
               </a>
             </div>
 
@@ -365,8 +431,45 @@ onMounted(() => {
             ></div>
           </div>
 
+          <!-- 作者信息 -->
+          <div v-if="cardAuthor" class="flex items-center gap-4 pt-6 mb-6 border-t border-white/60">
+            <div 
+              class="cursor-pointer"
+              @click="router.push(`/user/${card.userId}`)"
+            >
+              <div 
+                v-if="cardAuthor.avatar"
+                class="w-12 h-12 rounded-full overflow-hidden ring-2 ring-white/60 hover:ring-amber-300 transition-all"
+              >
+                <img :src="cardAuthor.avatar" :alt="cardAuthor.nickname" class="w-full h-full object-cover" />
+              </div>
+              <div 
+                v-else
+                class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-300 to-orange-200 flex items-center justify-center text-slate-900 font-semibold text-lg ring-2 ring-white/60 hover:ring-amber-300 transition-all"
+              >
+                {{ (cardAuthor.nickname || cardAuthor.username || '?').charAt(0).toUpperCase() }}
+              </div>
+            </div>
+            <div class="flex-1">
+              <span 
+                class="font-semibold text-slate-900 hover:text-amber-600 cursor-pointer transition-colors"
+                @click="router.push(`/user/${card.userId}`)"
+              >
+                {{ cardAuthor.nickname || cardAuthor.username }}
+              </span>
+              <p class="text-xs text-stone-500">@{{ cardAuthor.username }}</p>
+            </div>
+            <button
+              v-if="user && card.userId !== user.id"
+              @click="router.push(`/user/${card.userId}`)"
+              class="px-6 py-2 rounded-2xl bg-gradient-to-r from-amber-300 via-orange-200 to-stone-200 text-slate-900 text-sm font-semibold hover:scale-105 transition-all duration-300 shadow-md"
+            >
+              查看主页
+            </button>
+          </div>
+
           <!-- 卡片元信息 -->
-          <div class="flex items-center justify-between pt-8 border-t border-white/60">
+          <div class="flex items-center justify-between pt-6 border-t border-white/60">
             <div class="flex items-center gap-4 text-sm text-stone-500">
               <!-- 分类 -->
               <span v-if="card.category" class="px-4 py-2 bg-white/70 rounded-full">

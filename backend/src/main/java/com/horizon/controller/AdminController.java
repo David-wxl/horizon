@@ -312,4 +312,99 @@ public class AdminController {
             return Result.error("审核失败: " + e.getMessage());
         }
     }
+    
+    /**
+     * 获取图表数据（ECharts）
+     */
+    @GetMapping("/chart-data")
+    public Result<Map<String, Object>> getChartData() {
+        try {
+            Map<String, Object> charts = new HashMap<>();
+            
+            // 1. 卡片类型分布（饼图）
+            List<BentoCard> allCards = bentoCardService.list();
+            Map<String, Long> typeCount = allCards.stream()
+                    .collect(Collectors.groupingBy(
+                            card -> card.getCardType() != null ? card.getCardType() : "other",
+                            Collectors.counting()));
+            List<Map<String, Object>> typeDistribution = new ArrayList<>();
+            typeCount.forEach((type, count) -> {
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", type);
+                item.put("value", count);
+                typeDistribution.add(item);
+            });
+            charts.put("typeDistribution", typeDistribution);
+            
+            // 2. 最近30天每日新增卡片（折线图）
+            List<Map<String, Object>> dailyCards = new ArrayList<>();
+            LocalDate today = LocalDate.now();
+            for (int i = 29; i >= 0; i--) {
+                LocalDate date = today.minusDays(i);
+                LocalDateTime dayStart = LocalDateTime.of(date, LocalTime.MIN);
+                LocalDateTime dayEnd = LocalDateTime.of(date, LocalTime.MAX);
+                LambdaQueryWrapper<BentoCard> w = new LambdaQueryWrapper<>();
+                w.between(BentoCard::getCreateTime, dayStart, dayEnd);
+                long count = bentoCardService.count(w);
+                Map<String, Object> day = new HashMap<>();
+                day.put("date", date.toString());
+                day.put("count", count);
+                dailyCards.add(day);
+            }
+            charts.put("dailyCards", dailyCards);
+            
+            // 3. 最近30天每日新增用户
+            List<Map<String, Object>> dailyUsers = new ArrayList<>();
+            for (int i = 29; i >= 0; i--) {
+                LocalDate date = today.minusDays(i);
+                LocalDateTime dayStart = LocalDateTime.of(date, LocalTime.MIN);
+                LocalDateTime dayEnd = LocalDateTime.of(date, LocalTime.MAX);
+                LambdaQueryWrapper<User> w = new LambdaQueryWrapper<>();
+                w.between(User::getCreateTime, dayStart, dayEnd);
+                long count = userMapper.selectCount(w);
+                Map<String, Object> day = new HashMap<>();
+                day.put("date", date.toString());
+                day.put("count", count);
+                dailyUsers.add(day);
+            }
+            charts.put("dailyUsers", dailyUsers);
+            
+            // 4. 卡片状态分布
+            Map<String, Long> statusCount = allCards.stream()
+                    .collect(Collectors.groupingBy(
+                            card -> {
+                                if (card.getStatus() == null || card.getStatus() == 0) return "待审核";
+                                else if (card.getStatus() == 1) return "已通过";
+                                else return "已拒绝";
+                            },
+                            Collectors.counting()));
+            List<Map<String, Object>> statusDistribution = new ArrayList<>();
+            statusCount.forEach((status, count) -> {
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", status);
+                item.put("value", count);
+                statusDistribution.add(item);
+            });
+            charts.put("statusDistribution", statusDistribution);
+            
+            // 5. 热门卡片 TOP10（按点赞数）
+            LambdaQueryWrapper<BentoCard> topWrapper = new LambdaQueryWrapper<>();
+            topWrapper.orderByDesc(BentoCard::getLikeCount).last("LIMIT 10");
+            List<BentoCard> topCards = bentoCardService.list(topWrapper);
+            List<Map<String, Object>> hotCards = topCards.stream().map(card -> {
+                Map<String, Object> item = new HashMap<>();
+                item.put("title", card.getTitle() != null && card.getTitle().length() > 10
+                        ? card.getTitle().substring(0, 10) + "..." : card.getTitle());
+                item.put("likes", card.getLikeCount() != null ? card.getLikeCount() : 0);
+                item.put("views", card.getViewCount() != null ? card.getViewCount() : 0);
+                item.put("comments", card.getCommentCount() != null ? card.getCommentCount() : 0);
+                return item;
+            }).collect(Collectors.toList());
+            charts.put("hotCards", hotCards);
+            
+            return Result.success(charts);
+        } catch (Exception e) {
+            return Result.error("获取图表数据失败: " + e.getMessage());
+        }
+    }
 }

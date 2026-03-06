@@ -1,7 +1,6 @@
 package com.horizon.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -99,7 +98,7 @@ public class BentoCard {
     private Integer isPublic;
     
     /**
-     * 状态：0-正常，1-归档，2-草稿
+     * 状态：0-待审核，1-已通过，2-已拒绝
      */
     private Integer status;
     

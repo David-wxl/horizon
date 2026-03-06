@@ -1,44 +1,45 @@
-# 地平线 | 视界 (HORIZON)
+<p align="center">
+  <h1 align="center">HORIZON | 视界</h1>
+  <p align="center">基于 Bento Grid 的个人数字策展平台</p>
+</p>
 
-> 基于 Bento Grid 的个人数字策展平台
-
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Vue](https://img.shields.io/badge/Vue-3.4-green.svg)](https://vuejs.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.1-green.svg)](https://spring.io/projects/spring-boot)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0-blue.svg)](https://www.mysql.com/)
-
-## 项目简介
-
-「地平线 | 视界」是一个现代化的个人数字策展平台，采用 Bento Grid 布局，让用户像拼图一样自由组织和展示内容。
-
-### 核心特性
-
-- 🎨 **极致暖色 Bento Grid** - 玻璃拟态卡片、超大圆角、柔和阴影
-- ✍️ **所见即所得编辑** - 编辑/展示模式一键切换
-- 🧩 **多类型内容卡片** - 文本、图片、代码、链接、媒体卡片
-- 🌍 **社区广场** - 智能搜索、热门排序、社交互动
-- 👤 **用户系统** - 完整的个人资料和主页展示
-- 🔐 **管理员后台** - 精美的 Glassmorphism 设计风格
-- 📢 **通知系统** - 实时通知推送、审核结果通知
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
+  <img src="https://img.shields.io/badge/Vue-3.4-4FC08D?logo=vuedotjs&logoColor=white" alt="Vue">
+  <img src="https://img.shields.io/badge/Spring%20Boot-3.1-6DB33F?logo=springboot&logoColor=white" alt="Spring Boot">
+  <img src="https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white" alt="MySQL">
+  <img src="https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white" alt="Java">
+  <img src="https://img.shields.io/badge/Tailwind%20CSS-3.x-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS">
+</p>
 
 ---
+
+## 简介
+
+HORIZON 是一个现代化的个人数字策展平台。用户可以通过 **Bento Grid** 布局自由拼装内容卡片，支持代码、图片、Markdown 文本、链接、书影音等多种类型，打造个性化的数字展览馆。平台同时提供社区广场，让用户发现和互动。
+
+## 功能特性
+
+| 模块 | 功能 |
+|------|------|
+| **内容卡片** | 支持文本(Markdown)、图片、代码(语法高亮)、链接、书影音 5 种类型 |
+| **Bento 布局** | 拖拽排序、拖拽边框调整卡片尺寸、自由 Grid 编排 |
+| **社区广场** | 分类筛选、关键词/用户名搜索、最新/最热排序 |
+| **社交互动** | 点赞、收藏、评论、关注/取关、用户主页 |
+| **通知系统** | 审核结果推送、实时未读提醒、一键已读 |
+| **内容审核** | 管理员审核队列、通过/拒绝(含理由)、状态流转 |
+| **管理后台** | 数据统计(ECharts)、用户管理、内容管理、待办事项 |
+| **用户系统** | 注册/登录(JWT)、个人资料编辑、密码修改、用户名唯一校验 |
 
 ## 技术栈
 
-### 前端
-- Vue 3 + TypeScript + Vite
-- Tailwind CSS（原子化 CSS）
-- Vue Router（路由）
-- Axios（HTTP 客户端）
-
-### 后端
-- Spring Boot 3.1.5
-- Java 17
-- MySQL 8.0
-- MyBatis-Plus 3.5.7
-- JWT 认证
-
----
+```
+Frontend:  Vue 3 (Composition API) + TypeScript + Vite + Tailwind CSS
+Backend:   Spring Boot 3.1.5 + Java 17 + MyBatis-Plus 3.5.7
+Database:  MySQL 8.0
+Auth:      JWT (JSON Web Token)
+Charts:    ECharts 5.0
+```
 
 ## 快速开始
 
@@ -56,38 +57,34 @@ git clone https://github.com/David-wxl/horizon.git
 cd horizon
 ```
 
-### 2. 数据库配置
+### 2. 数据库初始化
 
-创建数据库并导入初始化脚本：
-
-```bash
-mysql -u root -p
+```sql
 CREATE DATABASE horizon CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE horizon;
-source backend/src/main/resources/sql/init.sql
+SOURCE backend/src/main/resources/sql/init.sql;
+-- 可选：导入模拟数据
+SOURCE backend/src/main/resources/sql/mock_data.sql;
 ```
 
 ### 3. 后端启动
 
-修改配置文件 `backend/src/main/resources/application.yml`：
+编辑 `backend/src/main/resources/application.yml`，修改数据库连接信息：
 
 ```yaml
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/horizon?useUnicode=true&characterEncoding=utf8mb4
     username: root
-    password: 你的密码
+    password: your_password
 ```
-
-启动后端：
 
 ```bash
 cd backend
-mvn clean install
 mvn spring-boot:run
 ```
 
-后端将运行在 `http://localhost:8080`
+后端运行于 `http://localhost:8080`
 
 ### 4. 前端启动
 
@@ -97,163 +94,79 @@ npm install
 npm run dev
 ```
 
-前端将运行在 `http://localhost:5173`
+前端运行于 `http://localhost:5173`
 
----
-
-## 使用说明
-
-### 普通用户
-
-1. **注册/登录** - 访问主页，点击注册按钮创建账号
-2. **创建卡片** - 进入"我的主页"，点击"+ 添加卡片"
-3. **编辑模式** - 点击"编辑模式"可编辑、删除、批量管理卡片
-4. **社区广场** - 浏览其他用户的公开内容，点赞和评论
-
-### 管理员
-
-1. **设置管理员权限** - 在数据库中将用户的 `role` 字段设置为 `ADMIN`
+### 5. 管理员设置
 
 ```sql
-UPDATE t_user SET role = 'ADMIN' WHERE username = '你的用户名';
+UPDATE t_user SET role = 'ADMIN' WHERE username = 'your_username';
 ```
-
-2. **访问管理后台** - 登录后，导航栏会显示"🔐 管理后台"按钮
-3. **审核内容** - 查看待审核卡片，点击"通过"或"拒绝"（需填写理由）
-4. **用户管理** - 查看用户统计、禁用/启用用户
-5. **删除权限** - 管理员可以删除任意卡片和评论
-
----
 
 ## 项目结构
 
 ```
 horizon/
-├── backend/                # 后端 (Spring Boot)
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/       # Java 源代码
-│   │   │   └── resources/  # 配置文件和 SQL 脚本
-│   │   └── test/           # 测试代码
-│   └── pom.xml             # Maven 配置
+├── backend/
+│   └── src/main/java/com/horizon/
+│       ├── config/          # 配置类 (CORS, MyBatis-Plus, WebMvc)
+│       ├── controller/      # REST 控制器
+│       ├── entity/          # 实体类
+│       ├── mapper/          # MyBatis Mapper
+│       ├── service/         # 业务逻辑
+│       ├── interceptor/     # JWT 拦截器
+│       ├── dto/             # 数据传输对象
+│       ├── vo/              # 视图对象
+│       ├── common/          # 通用响应封装
+│       ├── exception/       # 全局异常处理
+│       └── util/            # 工具类 (JWT)
 │
-├── frontend/               # 前端 (Vue 3)
-│   ├── src/
-│   │   ├── api/           # API 接口
-│   │   ├── components/    # Vue 组件
-│   │   ├── views/         # 页面视图
-│   │   ├── router/        # 路由配置
-│   │   └── App.vue        # 根组件
-│   ├── package.json       # npm 依赖
-│   └── vite.config.ts     # Vite 配置
+├── frontend/src/
+│   ├── api/                 # Axios 请求封装
+│   ├── components/          # 通用组件 (BentoCard, NotificationBell)
+│   ├── views/               # 页面 (Home, Square, Login, CardDetail...)
+│   ├── router/              # Vue Router 路由配置
+│   ├── style.css            # 全局样式 (Glassmorphism)
+│   └── main.ts              # 应用入口
 │
-└── README.md              # 项目说明
+└── README.md
 ```
-
----
-
-## 核心功能
-
-### 卡片类型
-
-- **文本卡片** - 支持 Markdown 渲染
-- **图片卡片** - Base64 或 URL，自动预览
-- **代码卡片** - 语法高亮显示
-- **链接卡片** - 一键访问外部链接
-- **媒体卡片** - 书影音展示
-
-### 审核流程
-
-1. 用户创建卡片后，状态为"待审核"（status=0），不会在广场显示
-2. 管理员在后台审核：
-   - **通过** - 卡片状态变为"已通过"（status=1），在广场公开展示，用户收到通知
-   - **拒绝** - 卡片状态变为"已拒绝"（status=2），用户收到包含理由的通知
-
-### 通知系统
-
-- 审核通过通知："✅ 审核通过"
-- 审核拒绝通知："❌ 审核未通过"（包含具体理由）
-- 实时红点提示
-- 点击通知可跳转到相关卡片
-
----
 
 ## 数据库设计
 
-### 主要表结构
+| 表名 | 说明 |
+|------|------|
+| `t_user` | 用户表 (账号、密码、角色、头像) |
+| `t_user_profile` | 用户档案 (简介、性别、地区) |
+| `t_bento_card` | 内容卡片 (类型、内容、布局、审核状态) |
+| `t_comment` | 评论表 (支持嵌套回复) |
+| `t_like` | 点赞表 |
+| `t_favorite` | 收藏表 |
+| `t_follow` | 关注关系表 |
+| `t_notification` | 通知表 |
 
-- `t_user` - 用户表
-- `t_bento_card` - 卡片表
-- `t_comment` - 评论表
-- `t_like` - 点赞表
-- `t_notification` - 通知表
+完整建表语句见 [`backend/src/main/resources/sql/init.sql`](backend/src/main/resources/sql/init.sql)
 
-详细表结构请查看 `backend/src/main/resources/sql/init.sql`
+## API 概览
 
----
-
-## API 文档
-
-### 用户相关
-- `POST /api/user/register` - 用户注册
-- `POST /api/user/login` - 用户登录
-- `GET /api/user/info` - 获取用户信息
-
-### 卡片相关
-- `GET /api/card/square` - 获取广场卡片
-- `POST /api/card/create` - 创建卡片
-- `PUT /api/card/update` - 更新卡片
-- `DELETE /api/card/delete/{id}` - 删除卡片
-
-### 管理员相关
-- `GET /api/admin/dashboard-stats` - 获取统计数据
-- `GET /api/admin/audit-queue` - 获取审核队列
-- `POST /api/admin/audit/{id}` - 审核卡片
-
-### 通知相关
-- `GET /api/notification/list` - 获取通知列表
-- `GET /api/notification/unread-count` - 获取未读数量
-- `PUT /api/notification/read/{id}` - 标记已读
-
----
-
-## 常见问题
-
-### 1. 端口冲突
-- 后端默认端口：8080
-- 前端默认端口：5173
-- 如需修改，请编辑对应的配置文件
-
-### 2. 跨域问题
-已配置 CORS，允许前端访问后端 API
-
-### 3. 数据库连接失败
-检查 MySQL 是否启动，数据库名称、用户名、密码是否正确
-
-### 4. 审核通过的卡片不显示
-确保卡片的 `status=1` 且 `is_public=1`
-
----
-
-## 开发计划
-
-- [ ] 关注功能
-- [ ] 消息系统
-- [ ] 标签系统优化
-- [ ] 卡片拖拽排序
-- [ ] 移动端适配
-- [ ] 国际化支持
-
----
+| 模块 | 端点 | 说明 |
+|------|------|------|
+| 用户 | `POST /api/user/register` | 注册 |
+| | `POST /api/user/login` | 登录 |
+| | `GET /api/user/{userId}` | 获取用户信息 |
+| | `GET /api/user/checkUsername` | 用户名可用性检查 |
+| 卡片 | `GET /api/card/square` | 广场卡片列表 |
+| | `POST /api/card/create` | 创建卡片 |
+| | `PUT /api/card/update` | 更新卡片 |
+| | `DELETE /api/card/delete/{id}` | 删除卡片 |
+| 互动 | `POST /api/like/card` | 点赞 |
+| | `POST /api/favorite` | 收藏 |
+| | `POST /api/follow` | 关注 |
+| | `POST /api/comment/create` | 评论 |
+| 通知 | `GET /api/notification/list` | 通知列表 |
+| | `GET /api/notification/unread-count` | 未读数 |
+| 管理 | `GET /api/admin/dashboard-stats` | 仪表盘数据 |
+| | `POST /api/admin/audit/{cardId}` | 审核卡片 |
 
 ## 许可证
 
 [MIT License](LICENSE)
-
----
-
-## 联系方式
-
-如有问题或建议，欢迎提交 Issue 或 Pull Request。
-
-项目地址：https://github.com/David-wxl/horizon

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { getSquareCards, type BentoCard } from '../api/card'
+import { get } from '../api/request'
 import BentoCardComponent from '../components/BentoCard.vue'
 import NotificationBell from '../components/NotificationBell.vue'
 import { useRouter } from 'vue-router'
@@ -13,12 +14,24 @@ const isAdmin = ref(false)
 
 // 卡片列表
 const cards = ref<BentoCard[]>([])
-const allCards = ref<BentoCard[]>([])  // 所有卡片（用于搜索）
+const allCards = ref<BentoCard[]>([])
 const loading = ref(true)
 
 // 搜索和排序
 const searchKeyword = ref('')
-const sortBy = ref<'latest' | 'hot'>('latest')  // latest: 最新, hot: 最热
+const sortBy = ref<'latest' | 'hot'>('latest')
+const activeCategory = ref<string>('all')
+const categories = ref<string[]>([])
+
+// 用户搜索结果
+interface SearchUser {
+  id: number
+  username: string
+  nickname: string
+  avatar: string
+  bio: string
+}
+const matchedUsers = ref<SearchUser[]>([])
 
 // 检查登录状态和角色
 function checkLoginStatus() {
@@ -36,19 +49,36 @@ function checkLoginStatus() {
 async function loadSquareCards() {
   loading.value = true
   try {
-    const response = await getSquareCards(1, 100)  // 一次加载100张卡片
+    const response = await getSquareCards(1, 100)
     allCards.value = response.records || []
+    extractCategories()
     filterAndSortCards()
   } catch (error: any) {
-    console.error('加载广场卡片失败:', error)
+    alert('加载广场卡片失败')
   } finally {
     loading.value = false
   }
 }
 
+function extractCategories() {
+  const cats = new Set<string>()
+  allCards.value.forEach(c => { if (c.category) cats.add(c.category) })
+  categories.value = Array.from(cats)
+}
+
+function setCategory(cat: string) {
+  activeCategory.value = cat
+  filterAndSortCards()
+}
+
 // 过滤和排序卡片
 function filterAndSortCards() {
   let filtered = [...allCards.value]
+
+  // 分类过滤
+  if (activeCategory.value !== 'all') {
+    filtered = filtered.filter(card => card.category === activeCategory.value)
+  }
   
   // 搜索过滤
   if (searchKeyword.value.trim()) {
@@ -91,8 +121,17 @@ function filterAndSortCards() {
 }
 
 // 搜索处理
-function handleSearch() {
+async function handleSearch() {
   filterAndSortCards()
+  if (searchKeyword.value.trim()) {
+    try {
+      matchedUsers.value = await get<SearchUser[]>(`/user/search?keyword=${encodeURIComponent(searchKeyword.value.trim())}`)
+    } catch {
+      matchedUsers.value = []
+    }
+  } else {
+    matchedUsers.value = []
+  }
 }
 
 // 排序处理
@@ -201,6 +240,23 @@ onUnmounted(() => {
         <p class="text-stone-600">发现来自世界各地的精彩内容</p>
       </div>
 
+      <!-- 分类筛选标签 -->
+      <div v-if="categories.length > 0" class="mb-6 flex items-center gap-3 flex-wrap">
+        <span class="text-sm text-stone-500">分类:</span>
+        <button
+          @click="setCategory('all')"
+          class="px-5 py-2 rounded-2xl text-sm transition-all duration-300"
+          :class="activeCategory === 'all' ? 'bg-gradient-to-r from-amber-300 via-orange-200 to-stone-200 text-slate-900 font-semibold shadow-md' : 'bg-white/80 text-slate-700 border border-white/60 hover:bg-white'"
+        >全部</button>
+        <button
+          v-for="cat in categories"
+          :key="cat"
+          @click="setCategory(cat)"
+          class="px-5 py-2 rounded-2xl text-sm transition-all duration-300"
+          :class="activeCategory === cat ? 'bg-gradient-to-r from-amber-300 via-orange-200 to-stone-200 text-slate-900 font-semibold shadow-md' : 'bg-white/80 text-slate-700 border border-white/60 hover:bg-white'"
+        >{{ cat }}</button>
+      </div>
+
       <!-- 搜索和排序 -->
       <div class="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
         <!-- 搜索框 -->
@@ -211,7 +267,7 @@ onUnmounted(() => {
                 v-model="searchKeyword"
                 @keyup.enter="handleSearch"
                 type="text"
-                placeholder="搜索卡片标题、内容、标签..."
+                placeholder="搜索卡片标题、内容、标签、用户名..."
                 class="w-full px-6 py-4 pl-12 bg-white/80 border border-white/60 rounded-3xl text-slate-900 placeholder-stone-400 focus:outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-200/60 transition-all"
               />
               <span class="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 text-xl">
@@ -248,6 +304,29 @@ onUnmounted(() => {
           >
             🔥 最热
           </button>
+        </div>
+      </div>
+
+      <!-- 用户搜索结果 -->
+      <div v-if="matchedUsers.length > 0" class="mb-8">
+        <h3 class="text-sm text-stone-500 mb-3">找到 {{ matchedUsers.length }} 位相关用户</h3>
+        <div class="flex gap-4 flex-wrap">
+          <div
+            v-for="u in matchedUsers"
+            :key="u.id"
+            @click="router.push(`/user/${u.id}`)"
+            class="flex items-center gap-3 px-5 py-3 bg-white/80 border border-white/60 rounded-2xl cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all duration-300"
+          >
+            <img
+              :src="u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`"
+              :alt="u.nickname"
+              class="w-10 h-10 rounded-full object-cover bg-stone-100"
+            />
+            <div>
+              <div class="font-semibold text-slate-900 text-sm">{{ u.nickname || u.username }}</div>
+              <div class="text-xs text-stone-500">@{{ u.username }}</div>
+            </div>
+          </div>
         </div>
       </div>
 

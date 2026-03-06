@@ -13,7 +13,7 @@
     </parent>
 
     <groupId>com.horizon</groupId>
-    <artifactId>horizon-backend</artifactId>
+    <artifactId>backend</artifactId>
     <version>1.0.0</version>
     <name>Horizon Backend</name>
     <description>HORIZON 地平线 - 后端服务</description>

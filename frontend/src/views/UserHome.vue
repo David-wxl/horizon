@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { request } from '../api/request'
 import type { BentoCard } from '../api/card'
+import { followUser, unfollowUser, checkFollowing, getFollowStats } from '../api/follow'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,21 +15,64 @@ const loading = ref(true)
 // 卡片列表
 const cards = ref<BentoCard[]>([])
 
+// 关注相关
+const isFollowing = ref(false)
+const followerCount = ref(0)
+const followingCount = ref(0)
+const followLoading = ref(false)
+const currentUserId = computed(() => {
+  const s = localStorage.getItem('user')
+  return s ? JSON.parse(s).id : null
+})
+const isOwnProfile = computed(() => currentUserId.value === Number(route.params.userId))
+
+async function loadFollowData(targetId: number) {
+  try {
+    const stats = await getFollowStats(targetId)
+    followerCount.value = stats.followerCount
+    followingCount.value = stats.followingCount
+    if (currentUserId.value && !isOwnProfile.value) {
+      isFollowing.value = await checkFollowing(currentUserId.value, targetId)
+    }
+  } catch {}
+}
+
+async function toggleFollow() {
+  if (!currentUserId.value) { router.push('/login'); return }
+  const targetId = Number(route.params.userId)
+  followLoading.value = true
+  try {
+    if (isFollowing.value) {
+      await unfollowUser(currentUserId.value, targetId)
+      isFollowing.value = false
+      followerCount.value = Math.max(0, followerCount.value - 1)
+    } else {
+      await followUser(currentUserId.value, targetId)
+      isFollowing.value = true
+      followerCount.value += 1
+    }
+  } catch {
+    await loadFollowData(targetId)
+  } finally {
+    followLoading.value = false
+  }
+}
+
 // 加载用户信息和卡片
 async function loadUserProfile() {
   loading.value = true
   try {
     const userId = Number(route.params.userId)
     
-    // 获取用户信息
     const userInfo = await request<any>(`/user/${userId}`, { method: 'GET' })
     user.value = userInfo
     
-    // 获取用户的公开卡片
     const response = await request<BentoCard[]>(`/card/user/${userId}/public`, { method: 'GET' })
     cards.value = response || []
+
+    await loadFollowData(userId)
   } catch (error: any) {
-    console.error('加载用户主页失败:', error)
+    alert('加载用户主页失败: ' + error.message)
   } finally {
     loading.value = false
   }
@@ -106,6 +150,13 @@ onMounted(() => {
                 {{ user.bio }}
               </p>
 
+              <!-- 关注统计 -->
+              <div class="flex items-center gap-6 mb-4">
+                <span class="text-sm"><strong class="text-lg text-slate-900">{{ followerCount }}</strong> <span class="text-stone-500">粉丝</span></span>
+                <span class="text-sm"><strong class="text-lg text-slate-900">{{ followingCount }}</strong> <span class="text-stone-500">关注</span></span>
+                <span class="text-sm"><strong class="text-lg text-slate-900">{{ cards.length }}</strong> <span class="text-stone-500">作品</span></span>
+              </div>
+
               <div class="flex items-center gap-6 text-sm text-stone-600">
                 <span v-if="user.location" class="flex items-center gap-2">
                   📍 {{ user.location }}
@@ -114,9 +165,20 @@ onMounted(() => {
                   {{ user.gender === 'male' ? '👨' : user.gender === 'female' ? '👩' : '🧑' }}
                   {{ user.gender === 'male' ? '男' : user.gender === 'female' ? '女' : '其他' }}
                 </span>
-                <span class="flex items-center gap-2">
-                  📄 {{ cards.length }} 张公开卡片
-                </span>
+              </div>
+
+              <!-- 关注按钮 -->
+              <div v-if="!isOwnProfile && currentUserId" class="mt-4">
+                <button
+                  @click="toggleFollow"
+                  :disabled="followLoading"
+                  class="px-8 py-3 rounded-2xl font-semibold transition-all duration-300 hover:scale-105 shadow-md"
+                  :class="isFollowing
+                    ? 'bg-white/80 text-slate-700 border border-white/60 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
+                    : 'bg-gradient-to-r from-amber-300 via-orange-200 to-stone-200 text-slate-900'"
+                >
+                  {{ followLoading ? '...' : isFollowing ? '已关注' : '+ 关注' }}
+                </button>
               </div>
             </div>
           </div>

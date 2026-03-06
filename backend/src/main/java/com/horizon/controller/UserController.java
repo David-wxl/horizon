@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -20,7 +21,30 @@ import java.util.Map;
 public class UserController {
     
     private final UserService userService;
-    
+
+    /**
+     * 检查用户名是否已存在
+     */
+    @GetMapping("/checkUsername")
+    public Result<Boolean> checkUsername(@RequestParam String username) {
+        return Result.success(userService.checkUsernameExists(username));
+    }
+
+    /**
+     * 搜索用户
+     */
+    @GetMapping("/search")
+    public Result<List<User>> searchUsers(@RequestParam String keyword) {
+        try {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                return Result.success(List.of());
+            }
+            return Result.success(userService.searchUsers(keyword.trim()));
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
     /**
      * 用户注册
      */
@@ -98,10 +122,26 @@ public class UserController {
     }
     
     /**
-     * 测试接口
+     * 修改密码
      */
-    @GetMapping("/test")
-    public Result<String> test() {
-        return Result.success("HORIZON Backend is running!");
+    @PostMapping("/changePassword")
+    public Result<Boolean> changePassword(@RequestBody Map<String, String> params) {
+        try {
+            Long userId = Long.parseLong(params.get("userId"));
+            String oldPassword = params.get("oldPassword");
+            String newPassword = params.get("newPassword");
+            
+            if (oldPassword == null || newPassword == null) {
+                return Result.error("参数不完整");
+            }
+            if (newPassword.length() < 6) {
+                return Result.error("新密码长度不能少于6位");
+            }
+            
+            boolean changed = userService.changePassword(userId, oldPassword, newPassword);
+            return Result.success(changed);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
     }
 }

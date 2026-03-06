@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS t_bento_card (
     card_type VARCHAR(20) NOT NULL COMMENT '卡片类型：image/code/text/media/link/collection',
     
     -- 内容存储（支持文本、Markdown、代码、链接等）
-    content TEXT COMMENT '卡片内容'
+    content TEXT COMMENT '卡片内容',
     
     -- 布局信息（Grid 坐标系统）
     grid_x INT DEFAULT 0 COMMENT 'Grid X 坐标',
@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS t_bento_card (
     
     -- 公开性与状态
     is_public INT DEFAULT 1 COMMENT '是否公开到广场：0-私密，1-公开',
-    status INT DEFAULT 0 COMMENT '状态：0-正常，1-归档，2-草稿',
+    status INT DEFAULT 0 COMMENT '状态：0-待审核，1-已通过，2-已拒绝',
     
     -- 统计信息
     like_count INT DEFAULT 0 COMMENT '点赞数',
@@ -207,6 +207,22 @@ CREATE TABLE IF NOT EXISTS t_follow (
     INDEX idx_follower_id (follower_id),
     INDEX idx_following_id (following_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='关注表';
+
+-- ============================================
+-- 8. 收藏表
+-- ============================================
+CREATE TABLE IF NOT EXISTS t_favorite (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '收藏ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    card_id BIGINT NOT NULL COMMENT '卡片ID',
+    
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    deleted INT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
+    
+    UNIQUE KEY uk_user_card (user_id, card_id),
+    INDEX idx_user_id (user_id),
+    INDEX idx_card_id (card_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='收藏表';
 
 -- ============================================
 -- 插入测试数据

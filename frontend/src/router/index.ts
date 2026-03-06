@@ -9,6 +9,7 @@ import CardDetail from '../views/CardDetail.vue'
 import Profile from '../views/Profile.vue'
 import UserHome from '../views/UserHome.vue'
 import AdminDashboard from '../views/AdminDashboard.vue'
+import Favorites from '../views/Favorites.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -51,10 +52,16 @@ const routes: RouteRecordRaw[] = [
     component: Login
   },
   {
+    path: '/favorites',
+    name: 'Favorites',
+    component: Favorites,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/admin',
     name: 'AdminDashboard',
     component: AdminDashboard,
-    meta: { requiresAuth: true, requiresAdmin: true }  // 需要管理员权限
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 
