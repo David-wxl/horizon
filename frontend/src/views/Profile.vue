@@ -3,6 +3,8 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { post } from '../api/request'
 import { changePassword } from '../api/user'
+import NavBar from '../components/NavBar.vue'
+import { animateIn } from '../composables/useAnimate'
 
 const router = useRouter()
 
@@ -140,31 +142,17 @@ function goBack() {
 
 onMounted(() => {
   loadUserInfo()
+  const main = document.querySelector('.profile-main') as HTMLElement | null
+  if (main) animateIn(main, { delay: 50, duration: 550, from: { opacity: 0, y: 28, scale: 1 } })
 })
 </script>
 
 <template>
-  <div class="min-h-screen relative overflow-hidden text-slate-800">
-    <!-- 顶部导航栏 -->
-    <nav class="sticky top-0 z-50 backdrop-blur-xl bg-white/60 border-b border-white/60">
-      <div class="max-w-5xl mx-auto px-8 py-6">
-        <div class="flex items-center justify-between">
-          <button
-            @click="goBack"
-            class="flex items-center gap-2 text-slate-700 hover:text-slate-900 transition-colors"
-          >
-            ← 返回
-          </button>
-          
-          <h1 class="text-xl font-semibold text-slate-900 tracking-tight">个人资料</h1>
-          
-          <div class="w-20"></div>
-        </div>
-      </div>
-    </nav>
+  <div class="min-h-screen relative text-slate-800">
+    <NavBar variant="back" title="个人资料" max-width="max-w-3xl" />
 
     <!-- 主内容 -->
-    <main class="max-w-3xl mx-auto px-8 py-12">
+    <main class="profile-main max-w-3xl mx-auto px-8 py-12">
       <div class="glass-card p-12">
         <form @submit.prevent="handleSave" class="space-y-8">
           <!-- 头像 -->
@@ -374,9 +362,4 @@ onMounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
-* {
-  font-family: 'Inter', sans-serif;
-}
 </style>

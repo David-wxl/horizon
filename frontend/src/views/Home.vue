@@ -3,7 +3,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { getUserCards, createCard, updateCard, deleteCard, type BentoCard } from '../api/card'
 import BentoCardComponent from '../components/BentoCard.vue'
 import NotificationBell from '../components/NotificationBell.vue'
+import NavBar from '../components/NavBar.vue'
 import { useRouter } from 'vue-router'
+import { animateIn } from '../composables/useAnimate'
 
 const router = useRouter()
 
@@ -378,11 +380,16 @@ function handleStorageChange(e: StorageEvent) {
   }
 }
 
+function runEntryAnimation() {
+  const header = document.querySelector('.home-header') as HTMLElement | null
+  if (header) animateIn(header, { delay: 50, duration: 600, from: { opacity: 0, y: 24, scale: 1 } })
+}
+
 onMounted(() => {
   loadUserInfo()
   loadCards()
-  // 监听其他标签页的 localStorage 变化
   window.addEventListener('storage', handleStorageChange)
+  runEntryAnimation()
 })
 
 onUnmounted(() => {
@@ -391,113 +398,35 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen relative overflow-hidden text-slate-800">
+  <div class="min-h-screen relative text-slate-800">
     <!-- 顶部导航栏 -->
-    <nav class="sticky top-0 z-50 backdrop-blur-xl bg-white/60 border-b border-white/60">
-      <div class="max-w-7xl mx-auto px-8 py-6">
-        <div class="flex items-center justify-between">
-          <!-- Logo -->
-          <div class="flex items-center gap-4">
-            <h1 class="text-2xl font-semibold text-slate-900 tracking-tight">HORIZON</h1>
-            <span class="text-sm text-stone-500">{{ user?.nickname || user?.username }}</span>
-          </div>
-
-          <!-- 操作按钮 -->
-          <div class="flex items-center gap-4">
-            <!-- 非编辑模式按钮 -->
-            <template v-if="!isEditMode">
-              <!-- 通知铃铛 -->
-              <NotificationBell />
-              
-              <button
-                v-if="user?.role === 'ADMIN'"
-                @click="$router.push('/admin')"
-                class="px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-300 via-pink-200 to-rose-200 text-slate-900 font-semibold shadow-md hover:scale-105 transition-all duration-300"
-              >
-                🔐 管理后台
-              </button>
-              
-              <button
-                @click="$router.push('/square')"
-                class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
-              >
-                🌍 社区广场
-              </button>
-
-              <button
-                @click="$router.push('/favorites')"
-                class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
-              >
-                ⭐ 我的收藏
-              </button>
-
-              <button
-                @click="openAddCardDialog"
-                class="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-300 via-orange-200 to-stone-200 text-slate-900 font-semibold shadow-md hover:scale-105 transition-all duration-300"
-              >
-                + 添加卡片
-              </button>
-
-              <button
-                @click="toggleEditMode"
-                class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
-              >
-                ✎ 编辑
-              </button>
-
-              <button
-                @click="$router.push('/profile')"
-                class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
-              >
-                👤 个人资料
-              </button>
-
-              <button
-                @click="handleLogout"
-                class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
-              >
-                登出
-              </button>
-            </template>
-
-            <!-- 编辑模式按钮 -->
-            <template v-else>
-              <button
-                @click="openAddCardDialog"
-                class="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-300 via-orange-200 to-stone-200 text-slate-900 font-semibold shadow-md hover:scale-105 transition-all duration-300"
-              >
-                + 添加
-              </button>
-
-              <button
-                @click="toggleSelectAll"
-                class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
-              >
-                {{ selectedCardIds.size === cards.length && cards.length > 0 ? '✓ 取消全选' : '☑️ 全选' }}
-              </button>
-
-              <button
-                v-if="selectedCardIds.size > 0"
-                @click="batchDeleteCards"
-                class="px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-300 via-red-200 to-pink-200 text-slate-900 font-semibold shadow-md hover:scale-105 transition-all duration-300"
-              >
-                🗑️ 删除 ({{ selectedCardIds.size }})
-              </button>
-
-              <button
-                @click="toggleEditMode"
-                class="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-300 via-green-200 to-teal-200 text-slate-900 font-semibold shadow-md hover:scale-105 transition-all duration-300"
-              >
-                ✓ 完成
-              </button>
-            </template>
-          </div>
-        </div>
-      </div>
-    </nav>
+    <NavBar variant="logo" :title="user?.nickname || user?.username || ''">
+      <!-- 非编辑模式 -->
+      <template v-if="!isEditMode">
+        <NotificationBell />
+        <button v-if="user?.role === 'ADMIN'" @click="$router.push('/admin')" class="btn-admin">🔐 管理后台</button>
+        <button @click="$router.push('/square')" class="btn-secondary">🌍 社区广场</button>
+        <button @click="$router.push('/favorites')" class="btn-secondary">⭐ 我的收藏</button>
+        <button @click="openAddCardDialog" class="btn-primary">+ 添加卡片</button>
+        <button @click="toggleEditMode" class="btn-secondary">✎ 编辑</button>
+        <button @click="$router.push('/profile')" class="btn-secondary">👤 个人资料</button>
+        <button @click="handleLogout" class="btn-secondary">登出</button>
+      </template>
+      <!-- 编辑模式 -->
+      <template v-else>
+        <button @click="openAddCardDialog" class="btn-primary">+ 添加</button>
+        <button @click="toggleSelectAll" class="btn-secondary">
+          {{ selectedCardIds.size === cards.length && cards.length > 0 ? '✓ 取消全选' : '☑️ 全选' }}
+        </button>
+        <button v-if="selectedCardIds.size > 0" @click="batchDeleteCards" class="btn-danger">
+          🗑️ 删除 ({{ selectedCardIds.size }})
+        </button>
+        <button @click="toggleEditMode" class="btn-success">✓ 完成</button>
+      </template>
+    </NavBar>
 
     <!-- 主内容 -->
-    <main class="max-w-7xl mx-auto px-8 py-12">
+    <main class="max-w-7xl mx-auto px-8 py-12 home-header">
       <!-- 分类筛选标签 -->
       <div v-if="categories.length > 0 && !loading" class="mb-8 flex items-center gap-3 flex-wrap">
         <span class="text-sm text-stone-500">分类:</span>
@@ -945,11 +874,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
-* {
-  font-family: 'Inter', sans-serif;
-}
 
 .drag-item {
   cursor: grab;

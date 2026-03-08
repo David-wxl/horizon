@@ -6,6 +6,8 @@ import {
   getDashboardStats, getAuditQueue, getApprovedCards, getWeeklyActivity, auditCard,
   getChartData, type DashboardStats, type AuditItem, type WeekActivity, type ChartData
 } from '../api/admin'
+import NavBar from '../components/NavBar.vue'
+import { animateIn } from '../composables/useAnimate'
 
 const router = useRouter()
 const user = ref<any>(null)
@@ -18,11 +20,6 @@ const showModal = ref(false)
 const modalTitle = ref('')
 const modalList = ref<AuditItem[]>([])
 const activeStatusFilter = ref<string>('all')
-const cpuData = ref<number[]>([30, 35, 40, 38, 45, 42, 50])
-const cpuTimer = ref<any>(null)
-const onlineTime = ref('02:35')
-const onlineProgress = ref(65)
-const expandedMenus = ref<Record<string, boolean>>({ system: false, users: true, statistics: false, logs: false })
 
 // ECharts 相关
 const chartData = ref<ChartData | null>(null)
@@ -231,19 +228,6 @@ async function loadDashboardData() {
   }
 }
 
-function startCPUAnimation() {
-  cpuTimer.value = setInterval(() => {
-    cpuData.value = cpuData.value.map(() => Math.random() * 30 + 30)
-  }, 2000)
-}
-
-function stopCPUAnimation() {
-  if (cpuTimer.value) {
-    clearInterval(cpuTimer.value)
-    cpuTimer.value = null
-  }
-}
-
 function handleStatusClick(filter: string) {
   activeStatusFilter.value = filter
   if (filter === 'pending') showPendingList()
@@ -345,8 +329,6 @@ function handleLogout() {
     router.push('/login')
   }
 }
-function toggleMenu(key: string) { expandedMenus.value[key] = !expandedMenus.value[key] }
-
 // 监听 storage 变化（多标签页同步）
 function handleStorageChange(e: StorageEvent) {
   if (e.key === 'token' || e.key === 'user') {
@@ -375,15 +357,15 @@ function handleStorageChange(e: StorageEvent) {
 onMounted(() => {
   loadUserInfo()
   loadDashboardData()
-  startCPUAnimation()
   loadChartData()
   loadAdminTodos()
   window.addEventListener('storage', handleStorageChange)
   window.addEventListener('resize', resizeCharts)
+  const content = document.querySelector('.admin-content') as HTMLElement | null
+  if (content) animateIn(content, { delay: 100, duration: 600, from: { opacity: 0, y: 24, scale: 1 } })
 })
 
 onUnmounted(() => {
-  stopCPUAnimation()
   disposeCharts()
   window.removeEventListener('storage', handleStorageChange)
   window.removeEventListener('resize', resizeCharts)
@@ -391,37 +373,23 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#BEBEC0] p-12 flex items-center justify-center">
-    <div class="w-full max-w-[1800px] bg-[#F9F8F4] rounded-[60px] shadow-2xl overflow-hidden relative">
+  <div class="min-h-screen">
+    <!-- 公共导航栏 -->
+    <NavBar variant="logo" title="管理后台">
+      <button @click="showPendingList" class="btn-secondary">🔔 内容审核</button>
+      <button @click="scrollToCharts" class="btn-secondary">📊 数据统计</button>
+      <button @click="navigateTo('/square')" class="btn-secondary">🌍 社区广场</button>
+      <button @click="navigateTo('/my')" class="btn-secondary">我的主页</button>
+      <button @click="navigateTo('/profile')" class="btn-secondary">⚙️ 个人设置</button>
+      <button @click="handleLogout" class="btn-secondary">登出</button>
+    </NavBar>
+
+    <div class="bg-[#BEBEC0] p-12 flex items-center justify-center">
+    <div class="admin-content w-full max-w-[1800px] bg-[#F9F8F4] rounded-[60px] shadow-2xl overflow-hidden relative">
       <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#FFEBA0]/40 via-[#F9F8F4] to-transparent pointer-events-none"></div>
 
-      <!-- 导航栏 -->
-      <div class="relative z-10 flex items-center justify-between px-10 pt-8 pb-6">
-        <div class="px-6 py-2 rounded-full border border-gray-200 bg-transparent">
-          <span class="text-sm font-bold text-[#2D2D2D]">Horizon</span>
-        </div>
-        <div class="flex items-center gap-1">
-          <div class="px-6 py-2.5 rounded-full bg-slate-900 text-white text-sm font-medium shadow-lg cursor-default">仪表盘</div>
-          <button @click="showPendingList" class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D] hover:bg-white/50 rounded-full transition-all">内容审核</button>
-          <button @click="navigateTo('/square')" class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D] hover:bg-white/50 rounded-full transition-all">社区广场</button>
-          <button @click="scrollToCharts" class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D] hover:bg-white/50 rounded-full transition-all">数据统计</button>
-          <button @click="navigateTo('/profile')" class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D] hover:bg-white/50 rounded-full transition-all">个人设置</button>
-          <button @click="navigateTo('/my')" class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D2D2D] hover:bg-white/50 rounded-full transition-all">我的主页</button>
-        </div>
-        <div class="flex items-center gap-4">
-          <button @click="navigateTo('/profile')" class="text-gray-600 hover:text-[#2D2D2D] text-xl" title="个人设置">⚙️</button>
-          <button @click="showPendingList" class="text-gray-600 hover:text-[#2D2D2D] text-xl" title="待审核">🔔</button>
-          <button @click="navigateTo('/profile')" class="w-10 h-10 rounded-full border-2 border-gray-300 overflow-hidden">
-            <img v-if="user?.avatar" :src="user.avatar" alt="Avatar" class="w-full h-full object-cover" />
-            <div v-else class="w-full h-full bg-stone-300 flex items-center justify-center text-white font-bold">
-              {{ (user?.nickname || 'A').charAt(0).toUpperCase() }}
-            </div>
-          </button>
-        </div>
-      </div>
-
       <!-- 加载状态 -->
-      <div v-if="loading" class="relative z-10 px-10 pb-10 space-y-6 animate-pulse">
+      <div v-if="loading" class="relative z-10 px-10 pt-8 pb-10 space-y-6 animate-pulse">
         <div class="h-24 bg-white/40 rounded-3xl"></div>
         <div class="grid grid-cols-12 gap-6">
           <div class="col-span-3 h-96 bg-white/40 rounded-3xl"></div>
@@ -653,12 +621,11 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
-* { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 @keyframes fade-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fade-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
 .animate-fade-in { animation: fade-in 0.3s ease-out; }

@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { request } from '../api/request'
 import type { BentoCard } from '../api/card'
 import { followUser, unfollowUser, checkFollowing, getFollowStats } from '../api/follow'
+import NavBar from '../components/NavBar.vue'
+import { animateIn } from '../composables/useAnimate'
 
 const route = useRoute()
 const router = useRouter()
@@ -85,36 +87,19 @@ function goBack() {
 
 onMounted(() => {
   loadUserProfile()
+  const main = document.querySelector('.userhome-main') as HTMLElement | null
+  if (main) animateIn(main, { delay: 50, duration: 550, from: { opacity: 0, y: 28, scale: 1 } })
 })
 </script>
 
 <template>
-  <div class="min-h-screen relative overflow-hidden text-slate-800">
-    <!-- 顶部导航栏 -->
-    <nav class="sticky top-0 z-50 backdrop-blur-xl bg-white/60 border-b border-white/60">
-      <div class="max-w-7xl mx-auto px-8 py-6">
-        <div class="flex items-center justify-between">
-          <button
-            @click="goBack"
-            class="flex items-center gap-2 text-slate-700 hover:text-slate-900 transition-colors"
-          >
-            ← 返回
-          </button>
-          
-          <h1 class="text-xl font-semibold text-slate-900 tracking-tight">用户主页</h1>
-          
-          <button
-            @click="router.push('/square')"
-            class="px-6 py-3 rounded-2xl bg-white/80 text-slate-700 border border-white/60 hover:bg-white transition-all duration-300"
-          >
-            社区广场
-          </button>
-        </div>
-      </div>
-    </nav>
+  <div class="min-h-screen relative text-slate-800">
+    <NavBar variant="back" title="用户主页">
+      <button @click="router.push('/square')" class="btn-secondary">🌍 社区广场</button>
+    </NavBar>
 
     <!-- 主内容 -->
-    <main class="max-w-7xl mx-auto px-8 py-12">
+    <main class="userhome-main max-w-7xl mx-auto px-8 py-12">
       <!-- 加载中 -->
       <div v-if="loading" class="text-center py-20">
         <div class="text-stone-500">加载中...</div>

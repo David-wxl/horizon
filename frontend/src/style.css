@@ -1,5 +1,5 @@
 /* Import Premium Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&display=swap');
 
 /* Tailwind CSS 基础样式 */
 @tailwind base;
@@ -30,70 +30,178 @@
 @layer components {
   .glass-card {
     @apply bg-white/70 backdrop-blur-2xl border border-white/50 rounded-3xl shadow-xl;
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .glass-card:hover {
-    @apply bg-white/80 border-white/60 -translate-y-2;
-    box-shadow: 0 25px 50px -12px rgba(120, 102, 72, 0.18),
-                0 12px 40px rgba(120, 102, 72, 0.12);
+    @apply bg-white/85 border-white/70 -translate-y-1;
+    box-shadow: 0 20px 40px -8px rgba(120, 102, 72, 0.16),
+                0 8px 24px rgba(120, 102, 72, 0.1);
   }
   
   .glass-panel {
     @apply bg-white/70 backdrop-blur-2xl border border-white/50 rounded-3xl;
     box-shadow: 0 0 60px rgba(120, 102, 72, 0.08);
   }
-  
+
+  /* ── 主按钮：温暖琥珀渐变 ── */
   .btn-primary {
-    @apply px-8 py-4 font-semibold text-slate-900 rounded-2xl;
-    background: linear-gradient(135deg, #f6d365 0%, #f1b07a 50%, #e9dbc8 100%);
-    box-shadow: 0 10px 30px rgba(120, 102, 72, 0.2);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    @apply inline-flex items-center justify-center px-5 py-2.5 font-semibold text-slate-800 rounded-xl text-sm;
+    background: linear-gradient(145deg, #f6d97a 0%, #f0b97b 55%, #e8d5b0 100%);
+    box-shadow: 0 2px 8px rgba(200, 150, 60, 0.25), 0 1px 2px rgba(0,0,0,0.06);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(220, 160, 70, 0.3);
   }
-  
   .btn-primary:hover {
-    @apply -translate-y-1 scale-105;
-    box-shadow: 0 20px 40px rgba(120, 102, 72, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(200, 150, 60, 0.3), 0 2px 6px rgba(0,0,0,0.08);
   }
-  
+  .btn-primary:active {
+    transform: translateY(0px) scale(0.98);
+    box-shadow: 0 1px 4px rgba(200, 150, 60, 0.2);
+  }
+
+  /* ── 次级按钮：玻璃感白色 ── */
   .btn-secondary {
-    @apply px-8 py-4 font-semibold text-slate-900 rounded-2xl;
-    @apply bg-white/60 backdrop-blur-xl border border-white/50;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    @apply inline-flex items-center justify-center px-5 py-2.5 font-medium text-slate-700 rounded-xl text-sm;
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.7);
+    box-shadow: 0 1px 4px rgba(120, 102, 72, 0.08), 0 1px 2px rgba(0,0,0,0.04);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
   .btn-secondary:hover {
-    @apply bg-white/80 border-white/70 -translate-y-1;
-    box-shadow: 0 10px 30px rgba(120, 102, 72, 0.15);
+    background: rgba(255,255,255,0.92);
+    border-color: rgba(255,255,255,0.9);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(120, 102, 72, 0.12), 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .btn-secondary:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  /* ── 危险按钮 ── */
+  .btn-danger {
+    @apply inline-flex items-center justify-center px-5 py-2.5 font-semibold text-slate-800 rounded-xl text-sm;
+    background: linear-gradient(145deg, #fca5a5 0%, #fb7185 55%, #fda4b0 100%);
+    box-shadow: 0 2px 8px rgba(220, 80, 100, 0.2), 0 1px 2px rgba(0,0,0,0.06);
+    border: 1px solid rgba(240, 100, 130, 0.3);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(220, 80, 100, 0.28);
+  }
+  .btn-danger:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  /* ── 管理员/特殊按钮 ── */
+  .btn-admin {
+    @apply inline-flex items-center justify-center px-5 py-2.5 font-semibold text-slate-800 rounded-xl text-sm;
+    background: linear-gradient(145deg, #c4b5fd 0%, #e879f9 55%, #f9a8d4 100%);
+    box-shadow: 0 2px 8px rgba(180, 90, 240, 0.2), 0 1px 2px rgba(0,0,0,0.06);
+    border: 1px solid rgba(200, 120, 255, 0.3);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .btn-admin:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(180, 90, 240, 0.28);
+  }
+  .btn-admin:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  /* ── 成功按钮 ── */
+  .btn-success {
+    @apply inline-flex items-center justify-center px-5 py-2.5 font-semibold text-slate-800 rounded-xl text-sm;
+    background: linear-gradient(145deg, #86efac 0%, #34d399 55%, #6ee7b7 100%);
+    box-shadow: 0 2px 8px rgba(40, 180, 120, 0.2), 0 1px 2px rgba(0,0,0,0.06);
+    border: 1px solid rgba(60, 200, 140, 0.3);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(40, 180, 120, 0.28);
+  }
+  .btn-success:active {
+    transform: translateY(0) scale(0.98);
   }
   
   .gradient-text {
     @apply bg-gradient-to-r from-amber-500 via-orange-400 to-stone-400 bg-clip-text text-transparent;
   }
+
+  /* Navbar */
+  .navbar-root {
+    transition: box-shadow 0.3s ease, background-color 0.3s ease;
+  }
+  .nav-back-btn {
+    @apply flex items-center gap-1.5 text-sm font-medium text-slate-600;
+    transition: all 0.2s ease;
+  }
 }
 
+/* ─────────────── 页面过渡动画 ─────────────── */
+.page-enter-active {
+  animation: page-in 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.page-leave-active {
+  animation: page-out 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes page-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+
+/* ─────────────── GSAP 动画初始状态 ─────────────── */
+/* 在 JS 设置 gsap.set 之前防止 FOUC */
+.gsap-hidden {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+/* ─────────────── 工具类动画 ─────────────── */
 @layer utilities {
   .fade-up {
-    animation: fade-up 0.75s cubic-bezier(0.4, 0, 0.2, 1) both;
+    animation: fade-up 0.65s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
-  .fade-up-delay-1 {
-    animation-delay: 120ms;
+  .fade-in {
+    animation: fade-in 0.5s ease both;
   }
-  .fade-up-delay-2 {
-    animation-delay: 240ms;
+  .scale-in {
+    animation: scale-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
-  .fade-up-delay-3 {
-    animation-delay: 360ms;
-  }
+  .fade-up-delay-1 { animation-delay: 80ms; }
+  .fade-up-delay-2 { animation-delay: 160ms; }
+  .fade-up-delay-3 { animation-delay: 240ms; }
+  .fade-up-delay-4 { animation-delay: 320ms; }
 }
 
 @keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ─────────────── 脉冲 Loading ─────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, #f0ece4 25%, #faf8f2 50%, #f0ece4 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease infinite;
 }

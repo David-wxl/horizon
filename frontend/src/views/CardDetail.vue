@@ -8,6 +8,8 @@ import { addLike, removeLike } from '../api/like'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'
 import { marked } from 'marked'
+import NavBar from '../components/NavBar.vue'
+import { animateIn } from '../composables/useAnimate'
 
 const route = useRoute()
 const router = useRouter()
@@ -318,42 +320,27 @@ onMounted(() => {
     user.value = JSON.parse(userStr)
   }
   loadCardDetail()
+  const main = document.querySelector('.card-detail-main') as HTMLElement | null
+  if (main) animateIn(main, { delay: 50, duration: 550, from: { opacity: 0, y: 28, scale: 1 } })
 })
 </script>
 
 <template>
-  <div class="min-h-screen relative overflow-hidden text-slate-800">
-    <!-- 顶部导航栏 -->
-    <nav class="sticky top-0 z-50 backdrop-blur-xl bg-white/60 border-b border-white/60">
-      <div class="max-w-5xl mx-auto px-8 py-6">
-        <div class="flex items-center justify-between">
-          <button
-            @click="goBack"
-            class="flex items-center gap-2 text-slate-700 hover:text-slate-900 transition-colors"
-          >
-            ← 返回
-          </button>
-          
-          <h1 class="text-xl font-semibold text-slate-900 tracking-tight">卡片详情</h1>
-          
-          <!-- 删除按钮（作者或管理员可见） -->
-          <div>
-            <button
-              v-if="canDelete"
-              @click="handleDeleteCard"
-              class="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold transition-all hover:scale-105"
-              :title="user?.role === 'ADMIN' ? '管理员删除' : '删除卡片'"
-            >
-              <span v-if="user?.role === 'ADMIN'">🔐</span>
-              🗑️ 删除
-            </button>
-          </div>
-        </div>
-      </div>
-    </nav>
+  <div class="min-h-screen relative text-slate-800">
+    <NavBar variant="back" title="卡片详情" max-width="max-w-5xl">
+      <button
+        v-if="canDelete"
+        @click="handleDeleteCard"
+        class="btn-danger"
+        :title="user?.role === 'ADMIN' ? '管理员删除' : '删除卡片'"
+      >
+        <span v-if="user?.role === 'ADMIN'">🔐</span>
+        🗑️ 删除
+      </button>
+    </NavBar>
 
     <!-- 主内容 -->
-    <main class="max-w-5xl mx-auto px-8 py-12">
+    <main class="card-detail-main max-w-5xl mx-auto px-8 py-12">
       <!-- 加载中 -->
       <div v-if="loading" class="text-center py-20">
         <div class="text-stone-500">加载中...</div>
